@@ -98,6 +98,16 @@ Or copy the config from [`cursor/mcp-config.json`](cursor/mcp-config.json) into 
 
 ---
 
+## Verify a Release
+
+Each release ships a `covy-<version>-checksums.txt` file with SHA256 hashes for every artifact. After downloading, verify with:
+
+```bash
+sha256sum -c covy-v0.1.0-checksums.txt
+```
+
+---
+
 ## Coming Soon
 
 - cursor.directory one-click install

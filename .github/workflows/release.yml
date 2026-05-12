@@ -1,0 +1,44 @@
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build artifacts
+        run: |
+          set -e
+          VERSION="${GITHUB_REF_NAME}"
+          NAME="covy-${VERSION}"
+
+          mkdir -p dist
+          (cd desktop && zip -r "../dist/${NAME}.mcpb" .)
+          tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
+            .claude-plugin .claude .mcp.json cursor README.md CHANGELOG.md LICENSE SECURITY.md
+          (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: |
+            dist/*.mcpb
+            dist/*.tar.gz
+            dist/*-checksums.txt
+          generate_release_notes: true
+          body: |
+            ## Verification
+
+            Each release ships a `covy-<version>-checksums.txt` file with SHA256 hashes for every artifact. Verify before installing:
+
+            ```bash
+            sha256sum -c covy-<version>-checksums.txt
+            ```
