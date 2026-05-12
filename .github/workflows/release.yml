@@ -1,0 +1,78 @@
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build artifacts
+        id: build
+        run: |
+          set -e
+          VERSION="${GITHUB_REF_NAME}"
+          NAME="covy-${VERSION}"
+
+          mkdir -p dist
+          (cd desktop && zip -r "../dist/${NAME}.mcpb" .)
+          tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
+            .claude-plugin .claude .mcp.json cursor README.md CHANGELOG.md LICENSE SECURITY.md
+          (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign artifacts (keyless)
+        run: |
+          cd dist
+          for f in *.mcpb *.tar.gz; do
+            cosign sign-blob --yes --output-signature "${f}.sig" --output-certificate "${f}.crt" "$f"
+          done
+
+      - name: Generate SLSA build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: |
+            dist/*.mcpb
+            dist/*.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: |
+            dist/*.mcpb
+            dist/*.tar.gz
+            dist/*.sig
+            dist/*.crt
+            dist/*-checksums.txt
+          generate_release_notes: true
+          body: |
+            ## Verification
+
+            All release artifacts are signed with [cosign](https://github.com/sigstore/cosign) using keyless OIDC signing and include [SLSA v1.1 build provenance](https://slsa.dev).
+
+            Verify with cosign:
+            ```bash
+            cosign verify-blob \
+              --certificate-identity-regexp 'https://github.com/princi-ai/covy-plugin/.*' \
+              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+              --certificate covy-${{ steps.build.outputs.version }}.mcpb.crt \
+              --signature covy-${{ steps.build.outputs.version }}.mcpb.sig \
+              covy-${{ steps.build.outputs.version }}.mcpb
+            ```
+
+            Verify SLSA provenance:
+            ```bash
+            gh attestation verify covy-${{ steps.build.outputs.version }}.mcpb --repo princi-ai/covy-plugin
+            ```
