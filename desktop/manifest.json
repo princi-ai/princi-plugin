@@ -1,18 +1,46 @@
 {
-  "name": "Covy",
-  "description": "Search your emails, Drive docs, Slack, and calendar from Claude Desktop",
+  "manifest_version": "0.2",
+  "name": "covy",
+  "display_name": "Covy",
   "version": "0.1.0",
-  "vendor": "Princi AI",
-  "server": {
-    "type": "streamable-http",
-    "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy"
+  "description": "Search your emails, Drive docs, Slack, and calendar from Claude Desktop.",
+  "long_description": "Covy is a personal context engine. It searches your emails, Drive docs, Slack messages, and meeting notes so any Claude conversation can be grounded in the right background instantly.",
+  "author": {
+    "name": "Princi AI",
+    "url": "https://princi.ai"
   },
-  "userInputRequired": [
-    {
-      "key": "COVY_API_KEY",
-      "label": "Covy API Key",
-      "description": "Your p_* API key from princi.ai",
-      "secret": true
+  "homepage": "https://princi.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/princi-ai/covy-plugin"
+  },
+  "license": "MIT",
+  "keywords": ["covy", "princi", "context", "gmail", "drive", "slack", "calendar"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@latest",
+        "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy",
+        "--header",
+        "Authorization: Bearer ${user_config.api_key}"
+      ]
     }
-  ]
+  },
+  "tools": [
+    { "name": "search", "description": "Search Covy-indexed context (Gmail, Drive, Slack, Calendar, memory)." },
+    { "name": "fetch", "description": "Fetch a specific Covy resource by ID." }
+  ],
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Covy API Key",
+      "description": "Your p_* API key from princi.ai/settings/api-keys",
+      "required": true,
+      "sensitive": true
+    }
+  }
 }
