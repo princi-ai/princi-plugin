@@ -1,0 +1,24 @@
+name: validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  json:
+    name: validate-json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON files
+        run: |
+          set -e
+          for f in $(find . -name "*.json" -not -path "./node_modules/*"); do
+            echo "Validating $f"
+            python3 -m json.tool "$f" > /dev/null
+          done

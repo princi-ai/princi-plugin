@@ -1,0 +1,9 @@
+# Security-critical paths require admin review
+/.github/ @princi-ai/admin
+/desktop/ @princi-ai/admin
+/.mcp.json @princi-ai/admin
+/.claude-plugin/ @princi-ai/admin
+SECURITY.md @princi-ai/admin
+
+# Default: all other files require engineering review
+* @princi-ai/engineering

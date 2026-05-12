@@ -1,0 +1,29 @@
+# Dependabot configuration for SOC 2 CC3.2 (Risk Assessment).
+# Organization Settings must also enable: Dependabot alerts, Dependabot security updates.
+# Response SLAs: Critical 24h, High 1 week.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+      timezone: "America/Los_Angeles"
+    cooldown:
+      default-days: 14
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "dependabot"
+      - "github-actions"
