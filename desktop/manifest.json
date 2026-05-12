@@ -1,0 +1,18 @@
+{
+  "name": "Covy",
+  "description": "Search your emails, Drive docs, Slack, and calendar from Claude Desktop",
+  "version": "0.1.0",
+  "vendor": "Princi AI",
+  "server": {
+    "type": "streamable-http",
+    "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy"
+  },
+  "userInputRequired": [
+    {
+      "key": "COVY_API_KEY",
+      "label": "Covy API Key",
+      "description": "Your p_* API key from princi.ai",
+      "secret": true
+    }
+  ]
+}

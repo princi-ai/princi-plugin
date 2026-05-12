@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "covy": {
+      "type": "http",
+      "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy",
+      "headers": {
+        "Authorization": "Bearer ${COVY_API_KEY}"
+      }
+    }
+  }
+}
