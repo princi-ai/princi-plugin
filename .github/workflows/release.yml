@@ -21,7 +21,7 @@ jobs:
           NAME="covy-${VERSION}"
 
           mkdir -p dist
-          (cd desktop && zip -r "../dist/${NAME}.mcpb" .)
+          npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
             .claude-plugin .claude .mcp.json cursor README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")

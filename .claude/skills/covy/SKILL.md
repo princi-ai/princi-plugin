@@ -148,6 +148,6 @@ Synthesize everything into a context-rich output using this format. Context and 
 
 ## Error handling
 
-- **0 results**: "Covy found no results for '[query]'. Try `/covy <broader description>` or check that `COVY_API_KEY` is set in your shell (`echo $COVY_API_KEY`)."
+- **0 results**: "Covy found no results for '[query]'. Try `/covy <broader description>`, or make sure you are signed in (re-run the OAuth sign-in flow via the plugin if needed)."
 - **Fetch fails**: fall back to snippets only; note this in the output.
-- **MCP tool unavailable**: "The `mcp__covy__search` tool is not available in this session. Check that `COVY_API_KEY` is set in your shell and visit princi.ai to get a key."
+- **MCP tool unavailable**: "The `mcp__covy__search` tool is not available in this session. Re-run the OAuth sign-in flow via the plugin (the first tool call should open a browser to sign in to Princi)."
