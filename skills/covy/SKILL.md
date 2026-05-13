@@ -15,33 +15,12 @@ origin: plugin
 
 On-demand search across Drive, Gmail, Slack, Calendar, and Memory that extracts decisions and detailed action items from retrieved context. Especially useful for turning meeting notes into grounded, ready-to-plan next steps.
 
-## Setup — verify MCP connection first
+## MCP connection check
 
-Before using `/covy`, confirm the Covy MCP server is connected and authenticated.
+If the `mcp__covy__search` tool is unavailable or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
 
-**Claude Code (IDE extension):**
-1. Type `/mcp` in the chat input and press Enter — this opens the **Directory** panel
-2. In the left sidebar of the panel, click **Plugins**, then select the **Code** tab
-3. Find **Covy** and click it to open the plugin settings
-4. In the plugin settings sidebar, click **Connectors**
-5. If the panel shows **"You are not connected to covy yet"**, click the **Connect** button — this opens a browser tab for OAuth sign-in
-6. Complete the sign-in, then return to Claude Code — the connector will show as connected
-
-**Claude CLI (terminal):**
-1. Type `/mcp` and press Enter — Claude opens an interactive server list showing each server's status
-2. Look for `covy`:
-   - `✓ connected` — ready to use, no action needed
-   - `△ needs authentication` — must authenticate before use
-3. If `covy` shows `△ needs authentication`:
-   - Use ↑/↓ arrow keys to navigate to the `covy` entry
-   - Press **Enter** to select it — this opens a browser tab to the Princi sign-in page
-   - Complete the sign-in in the browser, then return to the terminal
-   - Run `/mcp` again to confirm the status changed to `✓ connected`
-
-**First-time sign-in (OAuth):**
-When you invoke a Covy tool for the first time, the MCP client triggers OAuth auto-discovery and opens a browser tab to sign in to Princi. Complete the sign-in flow — after that, all subsequent calls in the session are authenticated automatically.
-
-If the server shows as disconnected or you get a "tool unavailable" error, re-authenticate: in the CLI run `/mcp`, navigate to `covy`, and press Enter; in the IDE extension open the Covy plugin settings → **Connectors** → **Connect**.
+- **Claude Code (IDE extension):** Select Plugins → Code → Covy → Connectors → **Connect**.
+- **Claude CLI (terminal):** Navigate to `covy` with ↑/↓ and press **Enter** to open the browser sign-in.
 
 ---
 
