@@ -17,7 +17,7 @@ On-demand search across Drive, Gmail, Slack, Calendar, and Memory that extracts 
 
 ## MCP connection check
 
-If the `mcp__covy__search` tool is unavailable or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
+If the `mcp__covy__search` tool is unavailable or the Covy MCP server is not connected or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
 
 - **Claude Code (IDE extension):** Select Plugins → Code → Covy → Connectors → **Connect**.
 - **Claude CLI (terminal):** Navigate to `covy` with ↑/↓ and press **Enter** to open the browser sign-in.
