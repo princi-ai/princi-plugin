@@ -17,7 +17,7 @@ On-demand search across Drive, Gmail, Slack, Calendar, and Memory that extracts 
 
 ## MCP connection check
 
-If the `mcp__covy__search` tool is unavailable or the Covy MCP server is not connected or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
+If the Covy MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
 
 - **Claude Code (IDE extension):** Select Plugins → Code → Covy → Connectors → **Connect**.
 - **Claude CLI (terminal):** Navigate to `covy` with ↑/↓ and press **Enter** to open the browser sign-in.
@@ -26,19 +26,21 @@ If the `mcp__covy__search` tool is unavailable or the Covy MCP server is not con
 
 ## Args
 
-The full user message after `/covy` (or after the Covy trigger) is the task. Pass it through verbatim to `mcp__covy__search` as the query — do not pre-parse, summarize, or extract fields client-side. The search service handles ranking and source fan-out.
+The full user message after `/covy` (or after the Covy trigger) is the task. Pass it through verbatim to the Covy MCP **search** tool as the query — do not pre-parse, summarize, or extract fields client-side. The search service handles ranking and source fan-out.
+
+> **Note on tool naming:** The Covy MCP server exposes two tools — **search** and **fetch**. The runtime registers them with a server-specific prefix (e.g. `mcp__covy__search` or `mcp__<server-id>__search`), so the exact callable name varies. Use whichever Covy MCP tool with the matching role (`search` / `fetch`) is available in the current session.
 
 ## Workflow
 
 ### Step 1: Search for meeting context
 
-Pass the user's message verbatim to the `mcp__covy__search` tool — do not extract fields, summarize, or rewrite:
+Call the Covy MCP **search** tool with the user's message verbatim — do not extract fields, summarize, or rewrite:
 
 ```
-mcp__covy__search(query="<full user message>")
+search(query="<full user message>")
 ```
 
-Example: `mcp__covy__search(query="Implement the changes from yesterday's team meeting")`
+Example: `search(query="Implement the changes from yesterday's team meeting")`
 
 > **Source priority hint:** When the query is about meeting context, Gemini/Drive meeting notes (titles containing "Notes by Gemini" or matching the `Name:Name` pattern) are the highest-signal source. If both Drive and Gmail results appear for the same meeting, prefer the Drive document.
 
@@ -71,10 +73,10 @@ If 0 results: tell the user what query was used and suggest rephrasing or broade
 
 Only fetch when the search snippets are insufficient to generate a high-quality prompt — e.g., the task requires verbatim decisions, action items, or details that are clearly truncated in the snippet. If the snippets already cover what's needed, skip this step.
 
-When a fetch is needed and the top result is a Drive document (id starts with `drive:`):
+When a fetch is needed and the top result is a Drive document (id starts with `drive:`), call the Covy MCP **fetch** tool:
 
 ```
-mcp__covy__fetch(id="drive:<document-id>")
+fetch(id="drive:<document-id>")
 ```
 
 Use the returned full text as the primary source for generating the prompt. Snippets from other sources (Gmail, Slack, Calendar, Memory) supplement it.
@@ -159,4 +161,4 @@ Synthesize everything into a context-rich output using this format. Context and 
 
 - **0 results**: "Covy found no results for '[query]'. Try `/covy <broader description>`, or make sure you are signed in (re-run the OAuth sign-in flow via the plugin if needed)."
 - **Fetch fails**: fall back to snippets only; note this in the output.
-- **MCP tool unavailable**: "The `mcp__covy__search` tool is not available in this session. Re-run the OAuth sign-in flow via the plugin (the first tool call should open a browser to sign in to Princi)."
+- **MCP tool unavailable**: "The Covy MCP **search** tool is not available in this session. Re-run the OAuth sign-in flow via the plugin (the first tool call should open a browser to sign in to Princi)."
