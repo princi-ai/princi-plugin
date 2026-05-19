@@ -1,40 +1,40 @@
 ---
-name: covy
+name: princi
 description: |
   Retrieves context from Drive, Gmail, Slack, Calendar, and memory, then surfaces
   decisions and detailed action items.
   Use when: user mentions email, Slack, Drive/Docs, meeting notes, or standup
   alongside a task; or says "use my context", "what did we decide in…",
   "last meeting", "last standup", "look in my email/Slack/Drive",
-  "ground this in that doc", or explicitly mentions covy.
+  "ground this in that doc", or explicitly mentions princi.
   Example: "What do I need to do from today's meeting?"
 origin: plugin
 ---
 
-# covy
+# princi
 
 On-demand search across Drive, Gmail, Slack, Calendar, and Memory that extracts decisions and detailed action items from retrieved context. Especially useful for turning meeting notes into grounded, ready-to-plan next steps.
 
 ## MCP connection check
 
-If the Covy MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
+If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
 
-- **Claude Code (IDE extension):** Select Plugins → Code → Covy → Connectors → **Connect**.
-- **Claude CLI (terminal):** Navigate to `covy` with ↑/↓ and press **Enter** to open the browser sign-in.
+- **Claude Code (IDE extension):** Select Plugins → Code → Princi → Connectors → **Connect**.
+- **Claude CLI (terminal):** Navigate to `princi` with ↑/↓ and press **Enter** to open the browser sign-in.
 
 ---
 
 ## Args
 
-The full user message after `/covy` (or after the Covy trigger) is the task. Pass it through verbatim to the Covy MCP **search** tool as the query — do not pre-parse, summarize, or extract fields client-side. The search service handles ranking and source fan-out.
+The full user message after `/princi` (or after the Princi trigger) is the task. Pass it through verbatim to the Princi MCP **search** tool as the query — do not pre-parse, summarize, or extract fields client-side. The search service handles ranking and source fan-out.
 
-> **Note on tool naming:** The Covy MCP server exposes two tools — **search** and **fetch**. The runtime registers them with a server-specific prefix (e.g. `mcp__covy__search` or `mcp__<server-id>__search`), so the exact callable name varies. Use whichever Covy MCP tool with the matching role (`search` / `fetch`) is available in the current session.
+> **Note on tool naming:** The Princi MCP server exposes two tools — **search** and **fetch**. The runtime registers them with a server-specific prefix (e.g. `mcp__princi__search` or `mcp__<server-id>__search`), so the exact callable name varies. Use whichever Princi MCP tool with the matching role (`search` / `fetch`) is available in the current session.
 
 ## Workflow
 
 ### Step 1: Search for meeting context
 
-Call the Covy MCP **search** tool with the user's message verbatim — do not extract fields, summarize, or rewrite:
+Call the Princi MCP **search** tool with the user's message verbatim — do not extract fields, summarize, or rewrite:
 
 ```
 search(query="<full user message>")
@@ -49,7 +49,7 @@ Example: `search(query="Implement the changes from yesterday's team meeting")`
 Before generating the prompt, show the user what was found using this template:
 
 ```
-## Covy retrieved [N] results:
+## Princi retrieved [N] results:
 
 [Source] "Title" (date if known)
   > "Snippet"
@@ -61,7 +61,7 @@ Before generating the prompt, show the user what was found using this template:
 Example (one result):
 
 ```
-## Covy retrieved 1 result:
+## Princi retrieved 1 result:
 
 [Drive] "Team Standup — Notes by Gemini" (2026-04-30)
   > "Decided to ship the new search UI behind a feature flag; owner: backend team..."
@@ -73,7 +73,7 @@ If 0 results: tell the user what query was used and suggest rephrasing or broade
 
 Only fetch when the search snippets are insufficient to generate a high-quality prompt — e.g., the task requires verbatim decisions, action items, or details that are clearly truncated in the snippet. If the snippets already cover what's needed, skip this step.
 
-When a fetch is needed and the top result is a Drive document (id starts with `drive:`), call the Covy MCP **fetch** tool:
+When a fetch is needed and the top result is a Drive document (id starts with `drive:`), call the Princi MCP **fetch** tool:
 
 ```
 fetch(id="drive:<document-id>")
@@ -122,7 +122,7 @@ Synthesize everything into a context-rich output using this format. Context and 
 ```markdown
 ---
 
-## Covy context — [Meeting title or query] ([Date])
+## Princi context — [Meeting title or query] ([Date])
 **Sources:** [N] results · [Drive / Gmail / Slack / Memory — list which contributed]
 
 ### Context:
@@ -154,11 +154,11 @@ Synthesize everything into a context-rich output using this format. Context and 
 - [Assumption 1 and why it was made]
 
 ---
-*Retrieved by /covy from [N] sources · [date]*
+*Retrieved by /princi from [N] sources · [date]*
 ```
 
 ## Error handling
 
-- **0 results**: "Covy found no results for '[query]'. Try `/covy <broader description>`, or make sure you are signed in (re-run the OAuth sign-in flow via the plugin if needed)."
+- **0 results**: "Princi found no results for '[query]'. Try `/princi <broader description>`, or make sure you are signed in (re-run the OAuth sign-in flow via the plugin if needed)."
 - **Fetch fails**: fall back to snippets only; note this in the output.
-- **MCP tool unavailable**: "The Covy MCP **search** tool is not available in this session. Re-run the OAuth sign-in flow via the plugin (the first tool call should open a browser to sign in to Princi)."
+- **MCP tool unavailable**: "The Princi MCP **search** tool is not available in this session. Re-run the OAuth sign-in flow via the plugin (the first tool call should open a browser to sign in to Princi)."
