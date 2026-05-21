@@ -1,13 +1,13 @@
-# Covy Plugin
+# Princi Plugin
 
-Connect Covy — your personal context engine — to any AI coding tool.
+Connect Princi — your personal context engine — to any AI coding tool.
 
-Covy searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/covy what do I need to do from today's meeting` and get grounded, ranked action items instantly.
+Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
 
 **Examples:**
-- `/covy what tasks do I have from today's team sync meeting?`
-- `/covy what did we discuss about productionizing Covy in recent meetings?`
-- `/covy create a plan to update the PRD based on our latest discussions`
+- `/princi what tasks do I have from today's team sync meeting?`
+- `/princi what did we discuss about productionizing Princi in recent meetings?`
+- `/princi create a plan to update the PRD based on our latest discussions`
 
 ---
 
@@ -19,7 +19,7 @@ Covy searches your emails, Drive docs, Slack messages, and meeting notes to boot
 {
   "extraKnownMarketplaces": {
     "princi-ai": {
-      "source": { "source": "github", "repo": "princi-ai/covy-plugin" }
+      "source": { "source": "github", "repo": "princi-ai/princi-plugin" }
     }
   }
 }
@@ -28,19 +28,19 @@ Covy searches your emails, Drive docs, Slack messages, and meeting notes to boot
 **2. Install the plugin** in Claude Code:
 
 ```
-/plugins install covy@princi-ai
+/plugins install princi@princi-ai
 ```
 
-**3. Use it.** The first time you invoke a Covy tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/covy` skill is ready — no API key step.
+**3. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi` skill is ready — no API key step.
 
 ---
 
 ## Setup: Claude Desktop
 
-1. Download `covy.mcpb` from [Releases](https://github.com/princi-ai/covy-plugin/releases)
+1. Download `princi.mcpb` from [Releases](https://github.com/princi-ai/princi-plugin/releases)
 2. Double-click to install (or open via Claude Desktop → Extensions) — click Install
 3. A browser opens to sign in to Princi
-4. Done — Covy's tools are available in conversations
+4. Done — Princi's tools are available in conversations
 
 ---
 
@@ -48,14 +48,14 @@ Covy searches your emails, Drive docs, Slack messages, and meeting notes to boot
 
 **Option A — Install as a Cursor plugin** (bundles the skill + MCP server):
 
-In Cursor, run `/add-plugin covy` — or browse [cursor.com/marketplace](https://cursor.com/marketplace) and install Covy from the listing.
+In Cursor, run `/add-plugin princi` — or browse [cursor.com/marketplace](https://cursor.com/marketplace) and install Princi from the listing.
 
-Cursor registers the Covy MCP server and `/covy` skill automatically from [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json). The first time you invoke a Covy tool, an OAuth browser flow opens to sign in to Princi.
+Cursor registers the Princi MCP server and `/princi` skill automatically from [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
 
 **Option B — MCP server only** (no plugin):
 
 1. Open Cursor → Settings → MCP
-2. Add a new MCP server with URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy`
+2. Add a new MCP server with URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi`
 3. Save and restart Cursor
 
 Or copy the config from [cursor/mcp-config.json](cursor/mcp-config.json) into your Cursor MCP settings.
@@ -67,8 +67,8 @@ Auth uses OAuth auto-discovery when Cursor supports it. API-key fallback is avai
 ## Setup: ChatGPT (Pro / Team / Enterprise)
 
 1. Open ChatGPT → Settings → Developer Mode
-2. Add MCP server URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy`
-3. Covy's `search` and `fetch` tools are now available
+2. Add MCP server URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi`
+3. Princi's `search` and `fetch` tools are now available
 
 Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is available for older clients — contact Princi.
 
@@ -76,8 +76,8 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 
 ## Troubleshooting
 
-**`mcp__covy__search` not available:**
-- Re-run the OAuth sign-in flow: invoke a Covy tool — the HTTP MCP client should open a browser to sign in to Princi.
+**`mcp__princi__search` not available:**
+- Re-run the OAuth sign-in flow: invoke a Princi tool — the HTTP MCP client should open a browser to sign in to Princi.
 - Restart your coding tool if the sign-in browser doesn't open.
 
 **Sign-in browser doesn't open:**
@@ -85,9 +85,9 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 - Check your terminal/console for an authorization URL printed by `mcp-remote` and open it manually.
 
 **Token expired / 401 errors:**
-- Sign out by clearing the local `mcp-remote` token cache at `~/.mcp-auth/` and re-invoke a Covy tool to trigger a fresh sign-in.
+- Sign out by clearing the local `mcp-remote` token cache at `~/.mcp-auth/` and re-invoke a Princi tool to trigger a fresh sign-in.
 
-**0 results from `/covy`:**
+**0 results from `/princi`:**
 - Try a broader or rephrased query
 - Ensure your Google/Slack accounts are connected in Princi
 
@@ -96,24 +96,24 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 ## Updating
 
 ```
-/plugins update covy@princi-ai
+/plugins update princi@princi-ai
 ```
 
 ---
 
 ## Verify a Release
 
-Each release ships a `covy-<version>-checksums.txt` file with SHA256 hashes for every artifact. After downloading, verify with:
+Each release ships a `princi-<version>-checksums.txt` file with SHA256 hashes for every artifact. After downloading, verify with:
 
 ```bash
-sha256sum -c covy-v0.1.0-checksums.txt
+sha256sum -c princi-v0.1.0-checksums.txt
 ```
 
 ---
 
 ## Privacy Policy
 
-**Data collected.** Covy receives an OAuth identity (your Supabase Auth subject) and the MCP tool invocations you make against the Covy server — search queries and the IDs you fetch.
+**Data collected.** Princi receives an OAuth identity (your Supabase Auth subject) and the MCP tool invocations you make against the Princi server — search queries and the IDs you fetch.
 
 **Use.** This data is used solely to authenticate you and to return search/fetch results from your indexed sources (Gmail, Drive, Slack, Calendar, memory).
 

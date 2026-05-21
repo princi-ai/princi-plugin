@@ -1,10 +1,10 @@
 {
   "manifest_version": "0.2",
-  "name": "covy",
-  "display_name": "Covy",
+  "name": "princi",
+  "display_name": "Princi",
   "version": "0.1.0",
   "description": "Search your emails, Drive docs, Slack, and calendar from Claude Desktop.",
-  "long_description": "Covy is a personal context engine. It searches your emails, Drive docs, Slack messages, and meeting notes so any Claude conversation can be grounded in the right background instantly.",
+  "long_description": "Princi is a personal context engine. It searches your emails, Drive docs, Slack messages, and meeting notes so any Claude conversation can be grounded in the right background instantly.",
   "author": {
     "name": "Princi AI",
     "url": "https://princi.ai"
@@ -12,10 +12,10 @@
   "homepage": "https://princi.ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/princi-ai/covy-plugin"
+    "url": "https://github.com/princi-ai/princi-plugin"
   },
   "license": "MIT",
-  "keywords": ["covy", "princi", "context", "gmail", "drive", "slack", "calendar"],
+  "keywords": ["princi", "context", "gmail", "drive", "slack", "calendar"],
   "privacy_policies": ["https://princi.ai/privacy"],
   "server": {
     "type": "node",
@@ -25,18 +25,18 @@
       "args": [
         "-y",
         "mcp-remote@latest",
-        "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy"
+        "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi"
       ]
     }
   },
   "tools": [
     {
       "name": "search",
-      "description": "Search Covy-indexed context (Gmail, Drive, Slack, Calendar, memory)."
+      "description": "Search Princi-indexed context (Gmail, Drive, Slack, Calendar, memory)."
     },
     {
       "name": "fetch",
-      "description": "Fetch a specific Covy resource by ID."
+      "description": "Fetch a specific Princi resource by ID."
     }
   ]
 }

@@ -1,12 +1,12 @@
 {
-  "name": "covy-plugin",
+  "name": "princi-plugin",
   "owner": { "name": "Princi AI" },
   "plugins": [
     {
-      "name": "covy",
+      "name": "princi",
       "source": "./",
       "description": "Context-as-a-service for AI tools. Search your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background — so you start faster and miss nothing.",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "author": { "name": "Princi AI" },
       "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search"],
       "category": "productivity"

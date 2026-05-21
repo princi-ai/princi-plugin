@@ -1,16 +1,16 @@
 {
-  "name": "covy",
+  "name": "princi",
   "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code.",
   "version": "0.1.3",
   "author": { "name": "Princi AI", "email": "support@princi.ai" },
-  "repository": "https://github.com/princi-ai/covy-plugin",
+  "repository": "https://github.com/princi-ai/princi-plugin",
   "homepage": "https://princi.ai",
   "license": "MIT",
   "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search", "google drive", "slack", "knowledge retrieval"],
   "mcpServers": {
-    "covy": {
+    "princi": {
       "type": "http",
-      "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/covy"
+      "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi"
     }
   }
 }

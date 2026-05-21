@@ -1,12 +1,12 @@
 # Meeting notes → action items
 
-This section of the `/covy` skill handles converting meeting notes into a structured, timeline-aware action item list. The main `SKILL.md` dispatches here when the query is about meeting context (action items, decisions from a named or recent meeting).
+This section of the `/princi` skill handles converting meeting notes into a structured, timeline-aware action item list. The main `SKILL.md` dispatches here when the query is about meeting context (action items, decisions from a named or recent meeting).
 
 ---
 
 ## Step A: Timeline filter (apply before displaying results)
 
-After retrieving results from `mcp__covy__search`, apply this filter:
+After retrieving results from `mcp__princi__search`, apply this filter:
 
 ### 1. Parse result dates
 Extract the meeting date from each result — prefer the explicit meeting date in the document title or body over `modifiedTime`.
@@ -29,7 +29,7 @@ Only show when context is known to be superseded (a newer instance of the same m
 
 ```
 ⚠️ Using [meeting name] from [date] — a more recent instance may exist.
-   Try: /covy [broader or more recent meeting description]
+   Try: /princi [broader or more recent meeting description]
 ```
 
 Do not show this notice just because a result is old. Only show it when you have positive evidence the context is stale.
@@ -75,5 +75,5 @@ After the timeline filter and the ambiguity check (SKILL.md Step 3.6), generate:
 - [Assumption and why it was made]
 
 ---
-*Retrieved by /covy from [N] sources · [today's date]*
+*Retrieved by /princi from [N] sources · [today's date]*
 ```

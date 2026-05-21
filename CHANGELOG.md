@@ -4,7 +4,7 @@
 
 Initial release.
 
-- `/covy` skill for Claude Code (CLI, Co-work, IDE extension)
+- `/princi` skill for Claude Code (CLI, Co-work, IDE extension)
 - Meeting notes → action items workflow
 - Claude Desktop Extension manifest
 - Cursor MCP config reference

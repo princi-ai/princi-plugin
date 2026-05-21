@@ -10,7 +10,7 @@ Currently, only the latest version of this plugin is supported with security upd
 
 ## Reporting a Vulnerability
 
-We take the security of this project seriously. If you believe you have found a security vulnerability in the Covy plugin, please do not open a public issue.
+We take the security of this project seriously. If you believe you have found a security vulnerability in the Princi plugin, please do not open a public issue.
 
 Instead, please report it by emailing **security@princi.ai**.
 
