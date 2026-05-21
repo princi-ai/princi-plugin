@@ -18,7 +18,7 @@ jobs:
         run: |
           set -e
           VERSION="${GITHUB_REF_NAME}"
-          NAME="covy-${VERSION}"
+          NAME="princi-${VERSION}"
 
           mkdir -p dist
           npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
@@ -37,8 +37,8 @@ jobs:
           body: |
             ## Verification
 
-            Each release ships a `covy-<version>-checksums.txt` file with SHA256 hashes for every artifact. Verify before installing:
+            Each release ships a `princi-<version>-checksums.txt` file with SHA256 hashes for every artifact. Verify before installing:
 
             ```bash
-            sha256sum -c covy-<version>-checksums.txt
+            sha256sum -c princi-<version>-checksums.txt
             ```

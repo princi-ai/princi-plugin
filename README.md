@@ -19,7 +19,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 {
   "extraKnownMarketplaces": {
     "princi-ai": {
-      "source": { "source": "github", "repo": "princi-ai/covy-plugin" }
+      "source": { "source": "github", "repo": "princi-ai/princi-plugin" }
     }
   }
 }
@@ -37,7 +37,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 
 ## Setup: Claude Desktop
 
-1. Download `princi.mcpb` from [Releases](https://github.com/princi-ai/covy-plugin/releases)
+1. Download `princi.mcpb` from [Releases](https://github.com/princi-ai/princi-plugin/releases)
 2. Double-click to install (or open via Claude Desktop → Extensions) — click Install
 3. A browser opens to sign in to Princi
 4. Done — Princi's tools are available in conversations
