@@ -21,9 +21,35 @@ Personal pre-push PR review that grounds the review in your own context: Google 
 
 Flag only:
 - **(a)** A concrete bug introduced by this diff, or
-- **(b)** A violation of a rule in `pr-best-practices.md` or your Princi context that is grounded in evidence from the diff
+- **(b)** A violation of a rule in your best-practices file (see "Locating the best-practices file" below) or your Princi context that is grounded in evidence from the diff
 
 If you cannot do either, stay silent. If your internal confidence is below ~80%, drop the finding rather than hedge with "consider" or "might want to."
+
+---
+
+## Locating the best-practices file
+
+The skill reads from and writes to a personal best-practices file (default name: `pr-best-practices.md`). Its location varies by user — never assume the current working directory.
+
+**Resolution order** (use the first match):
+
+1. **Explicit override:** if the user has previously told you where to store it (check memory or CLAUDE.md for a `PRINCI_BEST_PRACTICES_PATH` or equivalent), use that path.
+2. **Repo-local:** search the current repo for an existing file in this order:
+   - `./.claude/princi/pr-best-practices.md`
+   - `./docs/princi/pr-best-practices.md`
+3. **User-global:** if no repo-local file exists, look for:
+   - `~/.princi/pr-best-practices.md`
+4. **Ask the user:** if no file is found anywhere and Step 8 wants to write one, ask before creating:
+
+   ```
+   I'd like to record promoted best-practice rules. Where should I store them?
+     1. ./docs/princi/pr-best-practices.md (repo-local, shared via git)
+     2. ./.claude/princi/pr-best-practices.md (repo-local, agent-scoped)
+     3. ~/.princi/pr-best-practices.md (global, all repos)
+     4. <other path>
+   ```
+
+   Once chosen, remember the choice for future runs.
 
 ---
 
@@ -47,10 +73,11 @@ If a finding is the *kind* a typical CI suite catches, omit it entirely.
 
 ## MCP connection check
 
-If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
+If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to follow the step for their environment:
 
-- **Claude Code (IDE extension):** Select Plugins → Code → Princi → Connectors → **Connect**.
-- **Claude CLI (terminal):** Navigate to `princi` with ↑/↓ and press **Enter** to open the browser sign-in.
+- **Claude Code:** Run `/mcp` and find Princi in the list. If its status shows needs authentication, select it and press **Enter** — Claude Code opens your browser. Sign in to Princi and approve access, then return to Claude Code.
+- **Claude Desktop:** Open **Settings → Connectors → Customize Plugins → Personal** tab, find Princi and click **+** to install. Then open **Connectors** in the sidebar, find Princi, and click **Install**. In the dialog, click **Add** (the URL is pre-filled), then click **Connect** to authenticate. A browser opens — sign in to Princi and approve access, then click **Open Claude** to return.
+- **Cursor:** Go to Settings → **Tools & MCPs**. Find `princi` under **Plugin MCP Servers** and click **Connect**. The browser opens — click **Approve** to authorize Cursor to access your Princi context. When prompted, click **Open Cursor** to return. Confirm Princi's status shows as connected.
 
 ---
 
@@ -69,16 +96,35 @@ If the Princi MCP server's **search** tool is unavailable, not connected, or ret
 
 ### Step 1: Parse args and resolve repo
 
-Extract the PR number (integer) from the user's message. If no PR number is present, respond with:
-
-```
-Usage: /princi-review-pr <PR #> [owner/repo]
-Example: /princi-review-pr 42
-```
+Extract the PR number (integer) from the user's message.
 
 Resolve the repo:
 1. If `[owner/repo]` is provided, use it.
 2. Otherwise, run `git remote get-url origin` and extract the `owner/repo` slug.
+
+**If no PR number is present**, resolve it from the current branch:
+
+1. Get the current branch:
+   ```bash
+   git rev-parse --abbrev-ref HEAD
+   ```
+2. Look up the PR for that branch (`gh pr view` with no argument resolves the PR for the current branch):
+   ```bash
+   gh pr view --repo <owner/repo> --json number,title,headRefName
+   ```
+3. If a PR is found, use its number for the rest of the workflow.
+4. If `gh pr view` reports no open PR for the branch, fall back to listing:
+   ```bash
+   gh pr list --repo <owner/repo> --head <current-branch> --state all --limit 1 --json number,title,state
+   ```
+   Use the most recent match. Surface its state (open/closed/merged) to the user before proceeding.
+5. If still nothing is found, respond with:
+   ```
+   No PR found for branch `<current-branch>` in `<owner/repo>`.
+   Usage: /princi-review-pr <PR #> [owner/repo]
+   Example: /princi-review-pr 42
+   ```
+   and stop.
 
 ### Step 2: Fetch PR evidence via `gh`
 
@@ -102,14 +148,28 @@ If either command fails (PR not found, no `gh` auth), surface the error and stop
 
 ### Step 3: Search Princi for personal context
 
-Call the Princi MCP **search** tool with a query composed from:
-- PR title
-- Top 3–5 most significant changed file paths (prefer paths that touch core logic, not generated/lock files)
-- Area/feature keywords from the branch name and PR labels
+Compose one **short, natural-language** query — a single clause that names the change and the area it touches. Keep it crisp (roughly one short sentence, ≤ ~15 words). The `search` tool handles sentences well; it just rewards focus over length.
+
+Source the wording from:
+- The **PR title** (the change itself)
+- The **primary module/area** touched (first 1–2 path segments of the top changed files)
+- The **PR description/body**:
+  - **Short body (≤ ~50 words):** include it verbatim — it already reads like a query.
+  - **Long body:** condense to one clause naming the goal and any explicit constraint. Drop checklists, screenshots, test plans, and review-process boilerplate.
+  - **Empty body:** skip this signal.
+- A **PR label** only when it sharpens the topic (e.g. `security`, `breaking-change`)
 
 ```
-search(query="PR: <title>. Files: <paths>. Looking for design decisions, past reviews, or known issues in this area.")
+search(query="<short phrase describing the change in the relevant area>")
 ```
+
+Example for a PR titled "Add JWT refresh-token rotation" touching `src/auth/jwt.ts` with label `security`:
+
+```
+search(query="JWT refresh-token rotation in src/auth")
+```
+
+If results look off-topic, re-query once with an even tighter phrase (drop the module path or the label, whichever is least specific).
 
 > **Note on tool naming:** The Princi MCP server's tools are registered with a server-specific prefix (e.g. `mcp__princi__search`). Use whichever Princi MCP tool matching the `search` role is available in the session.
 
@@ -146,8 +206,8 @@ Walk the diff. For each finding, determine its tier before posting — no tier =
 | Tier | Definition | Label |
 |------|-----------|-------|
 | **Bug** | Concrete correctness defect introduced by this diff (wrong result, crash, data loss, security hole, broken auth) | `[BLOCKING]` |
-| **Security** | Matches a rule in the Security section of `pr-best-practices.md` or your Princi context | `[BLOCKING]` |
-| **Best-practice violation** *(learned from failure)* | Violates a rule flagged `⚠️ learned from failure` in `pr-best-practices.md` or Princi context | `[BLOCKING]` |
+| **Security** | Matches a rule in the Security section of the best-practices file or your Princi context | `[BLOCKING]` |
+| **Best-practice violation** *(learned from failure)* | Violates a rule flagged `⚠️ learned from failure` in the best-practices file or Princi context | `[BLOCKING]` |
 | **Best-practice violation** *(other)* | Violates a rule not flagged as learned from failure | `[WARNING]` |
 | **Performance** | Concrete N+1, unbounded loop, missing index, or unheld timeout — grounded in the diff, not speculation | `[WARNING]` |
 | **Personal context** | An observation from your Princi context (Drive doc decision, past chat decision) that the diff may conflict with | `[INFO]` — not blocking |
@@ -162,7 +222,7 @@ Walk the diff. For each finding, determine its tier before posting — no tier =
 - "Consider extracting this into a function" / preference-level refactors
 - Alternative-library suggestions ("you could use lodash here")
 - Test-naming opinions
-- Generic best-practice advice you cannot cite from `pr-best-practices.md` or Princi context
+- Generic best-practice advice you cannot cite from the best-practices file or Princi context
 - Praise, encouragement, or sentiment
 
 #### Bug detection categories
@@ -209,12 +269,12 @@ Post each finding using this template:
 [BLOCKING|WARNING|INFO] <file>:<line> — <one-line problem statement>
   Why: <one sentence on the failure mode or the cited rule>
   Fix: <one-sentence minimal change>
-  Source: <"diff" | "Princi: [doc title]" | "pr-best-practices.md: [rule headline] (PR #N)">
+  Source: <"diff" | "Princi: [doc title]" | "<best-practices-file>: [rule headline] (PR #N)">
 ```
 
 - Omit `Fix:` only when no minimal fix exists without a redesign.
 - Omit `Source:` only for Bug and Performance findings with no playbook citation.
-- Before naming any symbol, file path, or rule, verify it exists in the diff, the repo, or `pr-best-practices.md`. If you cannot verify, drop the finding.
+- Before naming any symbol, file path, or rule, verify it exists in the diff, the repo, or the best-practices file. If you cannot verify, drop the finding.
 
 ### Step 7: Determine verdict
 
@@ -225,7 +285,7 @@ Post each finding using this template:
 
 **Never** use `approve` — the human author makes the final approval call.
 
-### Step 8: Synthesize best practices (automatic, pattern-gated)
+### Step 8: Synthesize best practices (automatic, pattern-gated, optional)
 
 Runs at the end of every review. A rule is **only promoted** when the same pattern appears in the current PR **and** at least one historical PR — single-occurrence observations go to "What to check manually" instead.
 
@@ -253,9 +313,9 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 **Evidence:** PR #X, PR #Y (and optionally "Princi: [doc title]")
 ```
 
-**Merge with `pr-best-practices.md`** (in the current working directory):
-- If the file exists: append new rules, skip rules with identical titles, surface any contradictions to the user
-- If no file exists and at least one rule was promoted: create the file fresh
+**Merge with the best-practices file** (resolve its path using "Locating the best-practices file" above):
+- If the file exists at the resolved path: append new rules, skip rules with identical titles, surface any contradictions to the user
+- If no file exists and at least one rule was promoted: ask the user where to create it (see resolution step 4), then create it
 - If no rules were promoted: skip file write entirely; omit the "Best practices surfaced" section from output
 
 ### Step 9: Output
@@ -285,13 +345,13 @@ Reviewed N files; found X blocking and Y warning issues.
 Verdict: request_changes | comment
 
 ### Best practices surfaced
-*(Only present when recurring patterns were found — rules written to `pr-best-practices.md`)*
+*(Only present when recurring patterns were found — rules written to the best-practices file)*
 
 #### New rules added
 - **[Rule title]** `[paths]` `[labels]` — [1-line description] *(Evidence: [source])*
 
 #### Existing rules reinforced
-- **[Rule title]** — already in `pr-best-practices.md`, confirmed by this PR
+- **[Rule title]** — already in the best-practices file, confirmed by this PR
 
 ---
 *Reviewed by /princi-review-pr · [date]*
@@ -301,7 +361,7 @@ Verdict: request_changes | comment
 
 ## Anti-patterns — never do these
 
-- **No hallucinated APIs, files, or rules.** Before naming a symbol, file path, or playbook rule, verify it exists in the diff, in the repo, or in `pr-best-practices.md`. If you cannot verify, drop the finding.
+- **No hallucinated APIs, files, or rules.** Before naming a symbol, file path, or playbook rule, verify it exists in the diff, in the repo, or in the best-practices file. If you cannot verify, drop the finding.
 - **No CI duplication.** See "What CI already covers" above.
 - **No scope expansion.** Do not suggest refactors, rewrites, or "while you're here" cleanups unrelated to the diff.
 - **No duplicate findings.** If the same issue appears in multiple files, file one finding that references all locations rather than N copies.
