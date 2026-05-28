@@ -24,11 +24,35 @@ Pick the target using this order (safest, most version-controlled first):
 
 ## Step B: Gather complementary context
 
-Compose 1–2 short Princi search queries keyed on the feature name and the doc's headline sections.
+Call the Princi MCP **search** tool 1–2 times. Each call is keyed on the feature name and (optionally) one of the doc's headline sections. Keep each query short (≤ ~15 words) — `search` rewards focus, not length.
 
-- Prefer **Drive meeting notes** first (titles containing "Notes by Gemini" or matching the `Name:Name` pattern), then **Slack threads**, then **Gmail**.
-- Fetch full content for the top 1–2 Drive results when snippets are clearly truncated (call `fetch(id="drive:...")`).
-- Pass the user message verbatim where it already reads like a query. For decomposed searches, keep each query short (≤ ~15 words).
+```
+search(query="<short phrase naming the feature>")
+search(query="<feature> <load-bearing decision or area>")     # optional second pass
+```
+
+Example for a feature called "PR-review skill best-practices file":
+
+```
+search(query="PR review best-practices file location")
+search(query="PR review skill design doc decisions")
+```
+
+When the user message itself already reads like a focused query (e.g. names the feature and the area), pass it verbatim as the first call and skip the second.
+
+Rank and filter the returned results:
+- Prefer **Drive meeting notes** first (titles containing "Notes by Gemini" or matching the `Name:Name` pattern), then **Slack threads**, then **Gmail**, then **Memory**.
+- When two results cover the same source (e.g. Drive + Gmail copies of the same meeting notes), keep the Drive one.
+
+Call the Princi MCP **fetch** tool for the top 1–2 Drive results when (a) the snippet is clearly truncated mid-sentence, or (b) the snippet doesn't contain the verbatim decision/discussion you need for Step C's conflict detection:
+
+```
+fetch(id="drive:<document-id>")
+```
+
+Skip `fetch` when snippets already cover what's needed — every fetch is a round trip.
+
+> **Note on tool naming:** The Princi MCP server's tools are registered with a server-specific prefix (e.g. `mcp__princi__search` / `mcp__princi__fetch`). Use whichever Princi MCP tool with the matching role is available in the current session.
 
 ---
 
