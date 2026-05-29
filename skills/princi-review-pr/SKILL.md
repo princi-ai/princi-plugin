@@ -29,27 +29,13 @@ If you cannot do either, stay silent. If your internal confidence is below ~80%,
 
 ## Locating the best-practices file
 
-The skill reads from and writes to a personal best-practices file (default name: `pr-best-practices.md`). Its location varies by user — never assume the current working directory.
+The skill reads from and writes to a personal best-practices file. The canonical location is `.princi/pr-best-practices.md` at the repo root — the same path written by `/princi-create-pr-best-practices`. Resolve it relative to the repo root (e.g. `git rev-parse --show-toplevel`), never the current working directory.
 
 **Resolution order** (use the first match):
 
 1. **Explicit override:** if the user has previously told you where to store it (check memory or CLAUDE.md for a `PRINCI_BEST_PRACTICES_PATH` or equivalent), use that path.
-2. **Repo-local:** search the current repo for an existing file in this order:
-   - `./.claude/princi/pr-best-practices.md`
-   - `./docs/princi/pr-best-practices.md`
-3. **User-global:** if no repo-local file exists, look for:
-   - `~/.princi/pr-best-practices.md`
-4. **Ask the user:** if no file is found anywhere and Step 8 wants to write one, ask before creating:
-
-   ```
-   I'd like to record promoted best-practice rules. Where should I store them?
-     1. ./docs/princi/pr-best-practices.md (repo-local, shared via git)
-     2. ./.claude/princi/pr-best-practices.md (repo-local, agent-scoped)
-     3. ~/.princi/pr-best-practices.md (global, all repos)
-     4. <other path>
-   ```
-
-   Once chosen, remember the choice for future runs.
+2. **Canonical repo-local path:** `<repo-root>/.princi/pr-best-practices.md`.
+3. **Create it:** if no file is found and Step 8 wants to write one, create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed). Mention to the user that this is the canonical location shared with `/princi-create-pr-best-practices`.
 
 ---
 
@@ -315,7 +301,7 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 
 **Merge with the best-practices file** (resolve its path using "Locating the best-practices file" above):
 - If the file exists at the resolved path: append new rules, skip rules with identical titles, surface any contradictions to the user
-- If no file exists and at least one rule was promoted: ask the user where to create it (see resolution step 4), then create it
+- If no file exists and at least one rule was promoted: create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed) and write the rules there
 - If no rules were promoted: skip file write entirely; omit the "Best practices surfaced" section from output
 
 ### Step 9: Output
