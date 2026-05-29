@@ -1,6 +1,6 @@
 ---
 name: princi-create-pr-best-practices
-description: Analyze the last 100 closed GitHub PRs in the current repository — rollbacks, follow-on fixes, review feedback, and PR descriptions — synthesize reusable team conventions (for future PRs and design docs), and write .princi/pr-best-practices.md in the repo root (creating .princi/ if needed).
+description: Analyze the last 100 closed GitHub PRs in the current repository — rollbacks, follow-on fixes, review feedback, and PR descriptions — synthesize reusable team conventions (for future PRs and design docs), and write .princi/pr-best-practices.md in the repo root.
 origin: plugin
 ---
 
