@@ -1,12 +1,12 @@
 ---
 name: princi-create-pr-best-practices
-description: Analyze the last 100 closed GitHub PRs in the current repository — rollbacks, follow-on fixes, review feedback, and PR descriptions — synthesize reusable team conventions (for future PRs and design docs), and write pr-best-practices.md at the repo root.
+description: Analyze the last 100 closed GitHub PRs in the current repository — rollbacks, follow-on fixes, review feedback, and PR descriptions — synthesize reusable team conventions (for future PRs and design docs), and write .princi/pr-best-practices.md in the repo root (creating .princi/ if needed).
 origin: plugin
 ---
 
 # princi-create-pr-best-practices
 
-Fetches the last 100 closed PRs (in batches of 10), extracts high-signal events, synthesizes **reusable** imperative rules (with PR source links), and writes `pr-best-practices.md` at the repo root. The output is a standing guide for authors and reviewers — not a changelog of one-off fixes.
+Fetches the last 100 closed PRs (in batches of 10), extracts high-signal events, synthesizes **reusable** imperative rules (with PR source links), and writes `.princi/pr-best-practices.md` in the repo root (creating the `.princi/` directory if it does not exist). The output is a standing guide for authors and reviewers — not a changelog of one-off fixes.
 
 ## Workflow (execute in order — do not skip)
 
@@ -130,9 +130,9 @@ Example:
   Source: [PR #412](https://github.com/org/repo/pull/412), [PR #458](https://github.com/org/repo/pull/458), [application_audit_logs_spec.md](docs/compliance/application_audit_logs_spec.md), [AGENTS.md](AGENTS.md), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)
 ```
 
-### 5. Write pr-best-practices.md
+### 5. Write .princi/pr-best-practices.md
 
-Write to `pr-best-practices.md` at the repository root (overwrite if it exists):
+Ensure the `.princi/` directory exists at the repository root (create it if missing), then write to `.princi/pr-best-practices.md` (overwrite if it exists):
 
 ```markdown
 # Team best practices (from GitHub PRs)
