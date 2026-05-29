@@ -2,7 +2,7 @@
 
 ## 0.1.6 — 2026-05-28
 
-- Add `/princi-create-pr-best-practices` skill: analyze closed GitHub PRs, extract reusable team conventions, and write `pr-best-practices.md` at the repo root
+- Add `/princi-create-pr-best-practices` skill: analyze closed GitHub PRs, extract reusable team conventions, and write `.princi/pr-best-practices.md`
 - Include `collect-pr-evidence.mjs` collector script for deterministic PR evidence gathering via `gh`
 - Bump version to 0.1.6 across all plugin manifests
 
