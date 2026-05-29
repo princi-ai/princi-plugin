@@ -12,9 +12,7 @@ Fetches the last 100 closed PRs (in batches of 10), extracts high-signal events,
 
 ### 1. Collect PR evidence
 
-Run the skill-local collector script at `scripts/collect-pr-evidence.mjs` (resolve the path relative to this SKILL.md file; the user's shell cwd is the target repository root, not the skill directory). Invoke it with `node`.
-
-For a quick smoke test only, pass `--limit 5` to the script.
+Run the skill-local collector at `scripts/collect-pr-evidence.mjs` with `node`. For a quick smoke test, pass `--limit 5`.
 
 The script handles deterministic collection work:
 
