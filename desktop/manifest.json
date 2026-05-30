@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "princi",
   "display_name": "Princi",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Search your emails, Drive docs, Slack, and calendar from Claude Desktop.",
   "long_description": "Princi is a personal context engine. It searches your emails, Drive docs, Slack messages, and meeting notes so any Claude conversation can be grounded in the right background instantly.",
   "author": {
