@@ -55,7 +55,7 @@ Cursor registers the Princi MCP server and `/princi` skill automatically from [.
 **Option B — MCP server only** (no plugin):
 
 1. Open Cursor → Settings → MCP
-2. Add a new MCP server with URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi`
+2. Add a new MCP server with URL: `https://api.princi.ai/functions/v1/princi`
 3. Save and restart Cursor
 
 Or copy the config from [cursor/mcp-config.json](cursor/mcp-config.json) into your Cursor MCP settings.
@@ -67,7 +67,7 @@ Auth uses OAuth auto-discovery when Cursor supports it. API-key fallback is avai
 ## Setup: ChatGPT (Pro / Team / Enterprise)
 
 1. Open ChatGPT → Settings → Developer Mode
-2. Add MCP server URL: `https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi`
+2. Add MCP server URL: `https://api.princi.ai/functions/v1/princi`
 3. Princi's `search` and `fetch` tools are now available
 
 Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is available for older clients — contact Princi.

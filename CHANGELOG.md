@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7 — 2026-05-29
+
+- Point MCP endpoints at `api.princi.ai` custom domain instead of the Supabase project URL
+- Bump version to 0.1.7 across all plugin manifests
+
 ## 0.1.6 — 2026-05-28
 
 - Add `/princi-create-pr-best-practices` skill: analyze closed GitHub PRs, extract reusable team conventions, and write `.princi/pr-best-practices.md`

@@ -2,7 +2,7 @@
   "mcpServers": {
     "princi": {
       "type": "http",
-      "url": "https://imyhlkntvqyznjdmzfjs.supabase.co/functions/v1/princi"
+      "url": "https://api.princi.ai/functions/v1/princi"
     }
   }
 }
