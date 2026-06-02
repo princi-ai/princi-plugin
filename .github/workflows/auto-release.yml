@@ -1,4 +1,4 @@
-name: auto-release
+name: Auto Release
 
 # When .claude-plugin/plugin.json changes on main and its version has no
 # matching v<version> tag yet, this workflow tags the commit, builds the
