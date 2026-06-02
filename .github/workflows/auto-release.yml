@@ -1,4 +1,4 @@
-name: auto-release
+name: Auto Release
 
 # When .claude-plugin/plugin.json changes on main and its version has no
 # matching v<version> tag yet, this workflow tags the commit, builds the
@@ -82,7 +82,8 @@ jobs:
           mkdir -p dist
           npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
-            .claude-plugin .claude .mcp.json cursor README.md CHANGELOG.md LICENSE SECURITY.md
+            .claude-plugin .cursor-plugin .mcp.json cursor desktop skills \
+            README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
 
       - name: Create and push tag
