@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 — 2026-06-01
+
+- Add plugin logo: ship `assets/logo.png` and reference it via `logo` field in `.claude-plugin/plugin.json` and the marketplace entry so Cursor's plugin tile renders the Princi brand mark instead of the default placeholder
+- Add `displayName: "Princi"` to both manifests for capitalized rendering in plugin pickers
+- Bump version to 0.1.8 across all plugin manifests
+
 ## 0.1.7 — 2026-05-29
 
 - Point MCP endpoints at `api.princi.ai` custom domain instead of the Supabase project URL
