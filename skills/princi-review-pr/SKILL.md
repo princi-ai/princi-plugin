@@ -129,19 +129,26 @@ Also fetch the **inline review threads with their resolved state** — `gh pr vi
 # Inline review comments (per-line, with replies via in_reply_to_id)
 gh api repos/<owner/repo>/pulls/<PR#>/comments --paginate
 
-# Resolved state per thread (REST has no isResolved field; use GraphQL)
-gh api graphql -f query='
-  query($owner:String!,$repo:String!,$pr:Int!){
+# Resolved state per thread (REST has no isResolved field; use GraphQL).
+# Use --paginate so the ledger is COMPLETE: a settled finding missed because it
+# fell past page 1 would be re-raised in Step 6 — the exact failure this skill exists to prevent.
+gh api graphql --paginate -f query='
+  query($owner:String!,$repo:String!,$pr:Int!,$endCursor:String){
     repository(owner:$owner,name:$repo){
       pullRequest(number:$pr){
-        reviewThreads(first:100){ nodes {
-          isResolved
-          comments(first:20){ nodes { author{login} body path line } }
-        }}
+        reviewThreads(first:100, after:$endCursor){
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            isResolved
+            comments(first:100){ nodes { author{login} body path line } }
+          }
+        }
       }
     }
   }' -F owner=<owner> -F repo=<repo> -F pr=<PR#>
 ```
+
+`--paginate` walks `reviewThreads` until `hasNextPage` is false (the `$endCursor` variable and `pageInfo` block are required for it to work). The inner `comments(first:100)` covers any realistic thread; if a single thread somehow exceeds 100 replies, page it the same way before trusting the ledger.
 
 Collect from the output:
 - **Title** and **body**
