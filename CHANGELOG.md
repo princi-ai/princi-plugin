@@ -2,8 +2,7 @@
 
 ## 0.1.9 — 2026-06-05
 
-- `/princi-review-pr`: add a **suppression gate** to Step 6 so findings already declined or resolved in a PR's review threads (the prior-decisions ledger) are never re-raised — fixes the repeated "Microsoft-only users stranded" style noise where a concern the author already answered keeps coming back
-- `/princi-review-pr`: Step 2 now fetches inline review threads and their resolved state (`gh api .../pulls/N/comments` + GraphQL `reviewThreads { isResolved }`), which the synthesis step previously had no access to
+- `/princi-review-pr`: add a **suppression gate** to Step 6 so findings already declined-with-reason in a PR's review comments (the prior-decisions ledger) are never re-raised — fixes the repeated "stranded users" style noise where a concern the author already answered keeps coming back
 - `/princi-review-pr`: Step 8 now learns durable `Severity: SUPPRESS` rules from declined-with-reason findings so the same concern is not re-discovered on future PRs; output gains an "Already addressed" section
 - Align `.cursor-plugin` manifests to the current version (were lagging at 0.1.7)
 - Bump version to 0.1.9 across all plugin manifests
