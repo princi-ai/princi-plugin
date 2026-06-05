@@ -215,12 +215,12 @@ Repetitive review noise has one root cause: a reviewer re-derives findings from 
 **Build the prior-decisions ledger** from the inline review threads collected in Step 2. A finding is **already settled** — do not re-raise it — when any of these hold for the same code location and concern:
 
 - The thread is marked `isResolved: true`, **or**
-- The PR author or a maintainer **declined** it with a stated reason (e.g. "declining — no Microsoft users exist", "intentional", "by design", "won't fix"), **or**
+- The PR author or a maintainer **declined** it with a stated reason (e.g. "declining — that user class no longer exists", "intentional", "by design", "won't fix"), **or**
 - The same concern was raised **and** answered earlier in this same PR's threads (even across multiple pushes — a finding raised 5 times and declined 5 times is settled, not 5 open issues).
 
 **Check the best-practices suppression rules** too — rules with `Severity: SUPPRESS` (see Step 8). If a candidate matches a suppression rule's `Applies when` / `Applies paths`, drop it.
 
-A candidate that matches the ledger or a suppression rule is **not a finding**. Do **not** post it, not even down-tiered to `[INFO]`. Instead list it once under "Already addressed" in the output (Step 9) with a one-line pointer to the resolving comment or rule. This is how the skill stays silent on the Microsoft-style "stranded users" concern after the author has already explained no such users exist — and how it avoids being the 6th identical comment.
+A candidate that matches the ledger or a suppression rule is **not a finding**. Do **not** post it, not even down-tiered to `[INFO]`. Instead list it once under "Already addressed" in the output (Step 9) with a one-line pointer to the resolving comment or rule. This is how the skill stays silent on a "stranded users" concern after the author has already explained no such users exist — and how it avoids being the 6th identical comment.
 
 **Exception — genuinely new information.** Only re-open a settled finding if *this* diff introduces a concretely different failure mode than the one already declined (not a rewording of the same concern). When you re-open, you must cite what changed; otherwise it stays suppressed.
 
@@ -315,7 +315,7 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 **Evidence collection:**
 1. Issues flagged in Step 6 → candidate rules
 2. Positive patterns in the current diff worth repeating → candidate rules
-3. **Declined / resolved findings from the prior-decisions ledger (Step 6) → candidate SUPPRESS rules.** When a finding was declined or resolved with a clear, durable reason — especially a *product* reason that will hold for future PRs too (e.g. "Microsoft is being retired; no Microsoft users exist") — capture it so neither this skill nor a future reviewer re-discovers it from scratch. This is the negative knowledge that stops the repetition at its source.
+3. **Declined / resolved findings from the prior-decisions ledger (Step 6) → candidate SUPPRESS rules.** When a finding was declined or resolved with a clear, durable reason — especially a *product* reason that will hold for future PRs too (e.g. "that integration is being retired; no users on it remain") — capture it so neither this skill nor a future reviewer re-discovers it from scratch. This is the negative knowledge that stops the repetition at its source.
 4. Fetch recent closed PRs for cross-reference:
    ```bash
    gh pr list --repo <owner/repo> --state closed --limit 20 \
@@ -327,7 +327,7 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 
 ```markdown
 ### Rule: Do not flag — <short title of the suppressed concern>
-**Applies when:** <condition that triggers the false finding — e.g. "a diff removes microsoft_365_connections from a workspace/auth check">
+**Applies when:** <condition that triggers the false finding — e.g. "a diff removes a deprecated integration's connections from a workspace/auth check">
 **Applies paths:** `<glob>`
 **Labels:** [suppress]
 **Severity:** SUPPRESS
