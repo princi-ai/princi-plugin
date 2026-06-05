@@ -196,9 +196,7 @@ Repetitive review noise has one root cause: a reviewer re-derives findings from 
 - The PR author or a maintainer **declined** it with a stated reason (e.g. "declining — that user class no longer exists", "intentional", "by design", "won't fix"), **or**
 - The same concern was raised **and** answered earlier in this same PR's comments (even across multiple pushes — a finding raised 5 times and declined 5 times is settled, not 5 open issues).
 
-**Check the best-practices suppression rules** too — rules with `Severity: SUPPRESS` (see Step 8). If a candidate matches a suppression rule's `Applies when` / `Applies paths`, drop it.
-
-A candidate that matches the ledger or a suppression rule is **not a finding**. Do **not** post it, not even down-tiered to `[INFO]`. Instead list it once under "Already addressed" in the output (Step 9) with a one-line pointer to the resolving comment or rule. This is how the skill stays silent on a "stranded users" concern after the author has already explained no such users exist — and how it avoids being the 6th identical comment.
+A candidate that matches the ledger is **not a finding**. Do **not** post it, not even down-tiered to `[INFO]`. Instead list it once under "Already addressed" in the output (Step 9) with a one-line pointer to the resolving comment. This is how the skill stays silent on a "stranded users" concern after the author has already explained no such users exist — and how it avoids being the 6th identical comment.
 
 **Exception — genuinely new information.** Only re-open a settled finding if *this* diff introduces a concretely different failure mode than the one already declined (not a rewording of the same concern). When you re-open, you must cite what changed; otherwise it stays suppressed.
 
@@ -293,29 +291,12 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 **Evidence collection:**
 1. Issues flagged in Step 6 → candidate rules
 2. Positive patterns in the current diff worth repeating → candidate rules
-3. **Declined findings from the prior-decisions ledger (Step 6) → candidate SUPPRESS rules.** When a finding was declined with a clear, durable reason — especially a *product* reason that will hold for future PRs too (e.g. "that integration is being retired; no users on it remain") — capture it so neither this skill nor a future reviewer re-discovers it from scratch. This is the negative knowledge that stops the repetition at its source.
-4. Fetch recent closed PRs for cross-reference:
+3. Fetch recent closed PRs for cross-reference:
    ```bash
    gh pr list --repo <owner/repo> --state closed --limit 20 \
      --json number,title,mergedAt,files
    ```
-5. Promote a positive candidate to a rule only when recurrence ≥ 2 (current PR + ≥1 historical PR show the same pattern). **A SUPPRESS rule is promoted on a single clear decline** — recurrence is not required, because the whole point is to prevent the second occurrence.
-
-**SUPPRESS rule format** (emit when a finding was declined with a durable reason):
-
-```markdown
-### Rule: Do not flag — <short title of the suppressed concern>
-**Applies when:** <condition that triggers the false finding — e.g. "a diff removes a deprecated integration's connections from a workspace/auth check">
-**Applies paths:** `<glob>`
-**Labels:** [suppress]
-**Severity:** SUPPRESS
-
-<1–2 sentence reason the finding does not apply, in the author's/maintainer's words.>
-
-**Evidence:** PR #X (declined by @author/@maintainer)
-```
-
-Before writing a SUPPRESS rule, confirm the reason is durable (a standing product/architecture decision), not PR-specific. A one-off "not in this PR" decline goes to "What to check manually", not the best-practices file.
+4. Promote a candidate to a rule only when recurrence ≥ 2 (current PR + ≥1 historical PR show the same pattern)
 
 **Rule format** (emit only when promoted):
 
@@ -349,7 +330,7 @@ Before writing a SUPPRESS rule, confirm the reason is durable (a standing produc
 
 ### Already addressed
 *(Concerns this diff might raise that were dropped by the Step 6 suppression gate — listed so the author sees they were considered, not missed. Omit this section if nothing was suppressed.)*
-- [concern] — settled by [declined by @user (PR #N) / SUPPRESS rule "<title>"]
+- [concern] — settled by [declined by @user in this PR's comments]
 
 ### Personal context applied
 - [doc/source title]: [1-sentence summary of what it contributed to this review]
@@ -387,7 +368,7 @@ Verdict: request_changes | comment
 - **No CI duplication.** See "What CI already covers" above.
 - **No scope expansion.** Do not suggest refactors, rewrites, or "while you're here" cleanups unrelated to the diff.
 - **No duplicate findings.** If the same issue appears in multiple files, file one finding that references all locations rather than N copies.
-- **No re-raising settled findings.** If a concern was already declined-with-reason in this PR's comments (the prior-decisions ledger), or matches a `SUPPRESS` rule in the best-practices file, do not post it — not even as `[INFO]`. Re-posting a finding the author already answered is the #1 cause of review fatigue. List it under "Already addressed" instead. Re-open only if this diff introduces a concretely different failure mode, and cite what changed.
+- **No re-raising settled findings.** If a concern was already declined-with-reason in this PR's comments (the prior-decisions ledger), do not post it — not even as `[INFO]`. Re-posting a finding the author already answered is the #1 cause of review fatigue. List it under "Already addressed" instead. Re-open only if this diff introduces a concretely different failure mode, and cite what changed.
 - **No comments on test files** unless the test itself is logically wrong (asserts the wrong thing, tests nothing, depends on shared mutable state).
 - **No comments on generated files, vendored code, lock files, or already-applied migrations.**
 - **No pre-existing-issue findings.** Comment only on what this diff introduces or changes. Do not flag long-standing bugs the diff did not touch.
