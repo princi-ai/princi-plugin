@@ -123,14 +123,35 @@ gh pr view <PR#> --repo <owner/repo> \
 gh pr diff <PR#> --repo <owner/repo>
 ```
 
+Also fetch the **inline review threads with their resolved state** — `gh pr view` returns only top-level comments and review summaries, not the per-line threads or whether each was resolved. You need both to build the prior-decisions ledger in Step 6:
+
+```bash
+# Inline review comments (per-line, with replies via in_reply_to_id)
+gh api repos/<owner/repo>/pulls/<PR#>/comments --paginate
+
+# Resolved state per thread (REST has no isResolved field; use GraphQL)
+gh api graphql -f query='
+  query($owner:String!,$repo:String!,$pr:Int!){
+    repository(owner:$owner,name:$repo){
+      pullRequest(number:$pr){
+        reviewThreads(first:100){ nodes {
+          isResolved
+          comments(first:20){ nodes { author{login} body path line } }
+        }}
+      }
+    }
+  }' -F owner=<owner> -F repo=<repo> -F pr=<PR#>
+```
+
 Collect from the output:
 - **Title** and **body**
 - **Branch names** (`headRefName` → `baseRefName`)
 - **Changed file paths** (from `files`) and **PR labels**
-- **Existing reviews and comments** (from `reviews`, `comments`)
+- **Existing reviews and top-level comments** (from `reviews`, `comments`)
+- **Inline review threads**: each thread's `path`/`line`, the original finding, every reply, `isResolved`, and whether the author or a maintainer **declined** it (a reply that rejects the finding with a reason — e.g. "declining", "won't fix", "intentional", "by design")
 - **Full diff** (from `gh pr diff`)
 
-If either command fails (PR not found, no `gh` auth), surface the error and stop.
+If the `gh pr view` or `gh pr diff` command fails (PR not found, no `gh` auth), surface the error and stop. If only the thread/GraphQL fetch fails, proceed without it but note in the output that prior-decision dedup was skipped.
 
 ### Step 3: Search Princi for personal context
 
@@ -186,6 +207,22 @@ Apply these rules before synthesizing the review:
 ### Step 6: Synthesize the review
 
 Walk the diff. For each finding, determine its tier before posting — no tier = no comment.
+
+#### Suppression gate (run this BEFORE assigning any tier)
+
+Repetitive review noise has one root cause: a reviewer re-derives findings from the diff on every run with **no memory of which findings were already raised and declined**. This skill must not do that. Before a candidate finding gets a tier, check it against two memories and drop it if either matches.
+
+**Build the prior-decisions ledger** from the inline review threads collected in Step 2. A finding is **already settled** — do not re-raise it — when any of these hold for the same code location and concern:
+
+- The thread is marked `isResolved: true`, **or**
+- The PR author or a maintainer **declined** it with a stated reason (e.g. "declining — no Microsoft users exist", "intentional", "by design", "won't fix"), **or**
+- The same concern was raised **and** answered earlier in this same PR's threads (even across multiple pushes — a finding raised 5 times and declined 5 times is settled, not 5 open issues).
+
+**Check the best-practices suppression rules** too — rules with `Severity: SUPPRESS` (see Step 8). If a candidate matches a suppression rule's `Applies when` / `Applies paths`, drop it.
+
+A candidate that matches the ledger or a suppression rule is **not a finding**. Do **not** post it, not even down-tiered to `[INFO]`. Instead list it once under "Already addressed" in the output (Step 9) with a one-line pointer to the resolving comment or rule. This is how the skill stays silent on the Microsoft-style "stranded users" concern after the author has already explained no such users exist — and how it avoids being the 6th identical comment.
+
+**Exception — genuinely new information.** Only re-open a settled finding if *this* diff introduces a concretely different failure mode than the one already declined (not a rewording of the same concern). When you re-open, you must cite what changed; otherwise it stays suppressed.
 
 #### Severity tiers
 
@@ -278,12 +315,29 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 **Evidence collection:**
 1. Issues flagged in Step 6 → candidate rules
 2. Positive patterns in the current diff worth repeating → candidate rules
-3. Fetch recent closed PRs for cross-reference:
+3. **Declined / resolved findings from the prior-decisions ledger (Step 6) → candidate SUPPRESS rules.** When a finding was declined or resolved with a clear, durable reason — especially a *product* reason that will hold for future PRs too (e.g. "Microsoft is being retired; no Microsoft users exist") — capture it so neither this skill nor a future reviewer re-discovers it from scratch. This is the negative knowledge that stops the repetition at its source.
+4. Fetch recent closed PRs for cross-reference:
    ```bash
    gh pr list --repo <owner/repo> --state closed --limit 20 \
      --json number,title,mergedAt,files
    ```
-4. Promote a candidate to a rule only when recurrence ≥ 2 (current PR + ≥1 historical PR show the same pattern)
+5. Promote a positive candidate to a rule only when recurrence ≥ 2 (current PR + ≥1 historical PR show the same pattern). **A SUPPRESS rule is promoted on a single clear decline** — recurrence is not required, because the whole point is to prevent the second occurrence.
+
+**SUPPRESS rule format** (emit when a finding was declined/resolved with a durable reason):
+
+```markdown
+### Rule: Do not flag — <short title of the suppressed concern>
+**Applies when:** <condition that triggers the false finding — e.g. "a diff removes microsoft_365_connections from a workspace/auth check">
+**Applies paths:** `<glob>`
+**Labels:** [suppress]
+**Severity:** SUPPRESS
+
+<1–2 sentence reason the finding does not apply, in the author's/maintainer's words.>
+
+**Evidence:** PR #X (declined by @author/@maintainer)
+```
+
+Before writing a SUPPRESS rule, confirm the reason is durable (a standing product/architecture decision), not PR-specific. A one-off "not in this PR" decline goes to "What to check manually", not the best-practices file.
 
 **Rule format** (emit only when promoted):
 
@@ -314,6 +368,10 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 
 ### Findings
 [per-finding blocks from Step 6, grouped BLOCKING → WARNING → INFO]
+
+### Already addressed
+*(Concerns this diff might raise that were dropped by the Step 6 suppression gate — listed so the author sees they were considered, not missed. Omit this section if nothing was suppressed.)*
+- [concern] — settled by [resolved thread / declined by @user (PR #N) / SUPPRESS rule "<title>"]
 
 ### Personal context applied
 - [doc/source title]: [1-sentence summary of what it contributed to this review]
@@ -351,6 +409,7 @@ Verdict: request_changes | comment
 - **No CI duplication.** See "What CI already covers" above.
 - **No scope expansion.** Do not suggest refactors, rewrites, or "while you're here" cleanups unrelated to the diff.
 - **No duplicate findings.** If the same issue appears in multiple files, file one finding that references all locations rather than N copies.
+- **No re-raising settled findings.** If a concern was already resolved or declined-with-reason in this PR's review threads (the prior-decisions ledger), or matches a `SUPPRESS` rule in the best-practices file, do not post it — not even as `[INFO]`. Re-posting a finding the author already answered is the #1 cause of review fatigue. List it under "Already addressed" instead. Re-open only if this diff introduces a concretely different failure mode, and cite what changed.
 - **No comments on test files** unless the test itself is logically wrong (asserts the wrong thing, tests nothing, depends on shared mutable state).
 - **No comments on generated files, vendored code, lock files, or already-applied migrations.**
 - **No pre-existing-issue findings.** Comment only on what this diff introduces or changes. Do not flag long-standing bugs the diff did not touch.
