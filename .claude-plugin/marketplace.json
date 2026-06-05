@@ -8,7 +8,7 @@
       "displayName": "Princi",
       "source": "./",
       "description": "Context-as-a-service for AI tools. Search your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background — so you start faster and miss nothing.",
-      "version": "0.1.8",
+      "version": "0.1.9",
       "author": { "name": "Princi AI" },
       "logo": "assets/logo.png",
       "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search"],
