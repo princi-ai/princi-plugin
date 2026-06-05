@@ -114,23 +114,27 @@ Resolve the repo:
 
 ### Step 2: Fetch PR evidence via `gh`
 
-Run both commands:
+Run all three commands:
 
 ```bash
 gh pr view <PR#> --repo <owner/repo> \
   --json title,body,headRefName,baseRefName,author,labels,files,reviews,comments
 
 gh pr diff <PR#> --repo <owner/repo>
+
+# Inline per-line review comments + replies — gh pr view omits these
+gh api repos/<owner/repo>/pulls/<PR#>/comments --paginate
 ```
 
 Collect from the output:
 - **Title** and **body**
 - **Branch names** (`headRefName` → `baseRefName`)
 - **Changed file paths** (from `files`) and **PR labels**
-- **Existing reviews and comments** (from `reviews`, `comments`) — including each thread's original finding, every reply, and whether the author or a maintainer **declined** it (a reply that rejects the finding with a reason — e.g. "declining", "won't fix", "intentional", "by design")
+- **Top-level reviews and PR comments** (from `gh pr view --json reviews,comments`) — review summaries and conversation comments
+- **Inline per-line review comments** (from `gh api .../pulls/<PR#>/comments`) — `gh pr view` does **not** return these. Each carries the original finding, its replies (linked via `in_reply_to_id`), and whether the author or a maintainer **declined** it (a reply that rejects the finding with a reason — e.g. "declining", "won't fix", "intentional", "by design")
 - **Full diff** (from `gh pr diff`)
 
-If either command fails (PR not found, no `gh` auth), surface the error and stop.
+If any command fails (PR not found, no `gh` auth), surface the error and stop.
 
 ### Step 3: Search Princi for personal context
 
@@ -191,7 +195,7 @@ Walk the diff. For each finding, determine its tier before posting — no tier =
 
 Repetitive review noise has one root cause: a reviewer re-derives findings from the diff on every run with **no memory of which findings were already raised and declined**. This skill must not do that. Before a candidate finding gets a tier, check it against two memories and drop it if either matches.
 
-**Build the prior-decisions ledger** from the review comments and replies collected in Step 2. A finding is **already settled** — do not re-raise it — when either of these holds for the same code location and concern:
+**Build the prior-decisions ledger** by merging both comment sources collected in Step 2 — (a) the **inline per-line review comments** from `gh api .../pulls/<PR#>/comments` and (b) the **top-level reviews and PR comments** from `gh pr view --json reviews,comments` — and apply the same declined/answered rules to both. A finding is **already settled** — do not re-raise it — when either of these holds for the same code location and concern:
 
 - The PR author or a maintainer **declined** it with a stated reason (e.g. "declining — that user class no longer exists", "intentional", "by design", "won't fix"), **or**
 - The same concern was raised **and** answered earlier in this same PR's comments (even across multiple pushes — a finding raised 5 times and declined 5 times is settled, not 5 open issues).
