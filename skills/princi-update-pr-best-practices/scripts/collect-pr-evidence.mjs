@@ -48,8 +48,8 @@ function parseArgs(argv) {
     throw new Error("--limit must be an integer from 1 to 100");
   }
 
-  if (args.since !== null && !/^\d{4}-\d{2}-\d{2}$/.test(args.since)) {
-    throw new Error("--since must be an ISO date (YYYY-MM-DD)");
+  if (args.since !== null && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z?)?$/.test(args.since)) {
+    throw new Error("--since must be an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ)");
   }
 
   return args;
@@ -61,7 +61,8 @@ function printHelp() {
 Collects GitHub PR evidence for /princi-update-pr-best-practices and writes one
 LLM-readable markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}
 
-  --since  Incremental mode: keep only PRs merged/closed on or after this date.
+  --since  Incremental mode: keep only PRs merged/closed on or after this point.
+           Accepts an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ).
            Filters within the --limit window (PRs are fetched newest-updated
            first, so a short window stays well inside the cap).`);
 }
@@ -119,7 +120,9 @@ async function resolveRepo() {
 function closedOnOrAfter(pr, since) {
   const value = pr.merged_at || pr.closed_at;
   if (!value) return false;
-  return String(value).slice(0, 10) >= since;
+  // ISO 8601 sorts lexically, so a direct string compare is correct for both a
+  // date-only `since` (includes the whole boundary day) and a full timestamp.
+  return String(value) >= since;
 }
 
 async function fetchClosedPrs(repo, limit, since = null) {

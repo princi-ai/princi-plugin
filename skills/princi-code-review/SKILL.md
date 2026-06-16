@@ -117,10 +117,10 @@ Resolve the repo:
 The review is only as good as the best-practices file it cites. Before reviewing, make sure that file exists and is not stale — regenerate it if needed, **in a separate sub-agent** so the 100-PR analysis never pollutes this review's context.
 
 1. **Resolve the path** using "Locating the best-practices file" above.
-2. **Decide if it is stale** — deterministically, not by eyeballing. The file written by `/princi-update-pr-best-practices` carries a YAML frontmatter `generated_at: YYYY-MM-DD`. Treat the file as **stale** when it is missing, has no `generated_at`, or `generated_at` is more than **14 days** before today. A one-liner:
+2. **Decide if it is stale** — deterministically, not by eyeballing. The file written by `/princi-update-pr-best-practices` carries a YAML frontmatter `generated_at` (an ISO date or timestamp). Treat the file as **stale** when it is missing, has no `generated_at`, or `generated_at` is more than **14 days** before today. A one-liner:
    ```bash
    # exits 0 = fresh, 1 = stale (also stale if file/field absent)
-   node -e 'const fs=require("fs");const p=process.argv[1];try{const m=fs.readFileSync(p,"utf8").match(/^---[\s\S]*?generated_at:\s*([0-9-]{10})/);process.exit(m&&(Date.now()-Date.parse(m[1]))/864e5<=14?0:1)}catch{process.exit(1)}' "<resolved-path>"
+   node -e 'const fs=require("fs");const p=process.argv[1];try{const m=fs.readFileSync(p,"utf8").match(/^---[\s\S]*?generated_at:\s*(\S+)/);process.exit(m&&(Date.now()-Date.parse(m[1]))/864e5<=14?0:1)}catch{process.exit(1)}' "<resolved-path>"
    ```
 3. **If stale (or absent), refresh it in a sub-agent.** Spawn one general-purpose sub-agent (via the Task tool) with a prompt along these lines, then **wait** for it to finish before continuing:
    > Invoke the `princi-update-pr-best-practices` skill for the repository at `<repo-root>` to refresh `<resolved-path>`. Do not commit or push. Reply with one line: the rule count and the new `generated_at`.
