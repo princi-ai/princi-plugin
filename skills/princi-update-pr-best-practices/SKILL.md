@@ -1,18 +1,27 @@
 ---
-name: princi-create-pr-best-practices
-description: Analyze the last 100 closed GitHub PRs in the current repository — rollbacks, follow-on fixes, review feedback, and PR descriptions — synthesize reusable team conventions (for future PRs and design docs), and write .princi/pr-best-practices.md in the repo root.
+name: princi-update-pr-best-practices
+description: Create or update the repository's `.princi/pr-best-practices.md`. Bootstraps from the last 100 closed GitHub PRs when no file exists; otherwise does an incremental update — synthesizing only PRs closed since the last run and merging them in. Synthesizes reusable team conventions (for future PRs and design docs) from rollbacks, follow-on fixes, review feedback, and PR descriptions.
 origin: plugin
 ---
 
-# princi-create-pr-best-practices
+# princi-update-pr-best-practices
 
-Fetches the last 100 closed PRs (in batches of 10), extracts high-signal events, synthesizes **reusable** imperative rules (with PR source links), and writes `.princi/pr-best-practices.md` in the repo root (creating the `.princi/` directory if it does not exist). The output is a standing guide for authors and reviewers — not a changelog of one-off fixes.
+Creates or refreshes `.princi/pr-best-practices.md` in the repo root. On first run it **bootstraps** from the last 100 closed PRs; on later runs it does an **incremental update** — synthesizing only PRs closed since the recorded `generated_at` and merging them into the existing file. It extracts high-signal events and synthesizes **reusable** imperative rules (with PR source links). The output is a standing guide for authors and reviewers — not a changelog of one-off fixes.
 
 ## Workflow (execute in order — do not skip)
 
+### 0. Determine run mode (bootstrap vs incremental)
+
+Resolve `.princi/pr-best-practices.md` at the repo root (`git rev-parse --show-toplevel`).
+
+- **No file, or the file has no YAML frontmatter `generated_at`** → **BOOTSTRAP**: collect with `--limit 100` (full scan) and synthesize the whole file. This is the first-run path.
+- **File exists with frontmatter `generated_at: YYYY-MM-DD`** → **INCREMENTAL**: collect with `--since <generated_at>` so only PRs merged/closed on or after that date are fetched, synthesize rules from just those PRs, then **merge** into the existing file (see step 5). If the collector reports `PRs analyzed: 0`, there is nothing new — leave the file untouched and report "already current," then stop.
+
+Carry the chosen mode (and `--since` date, if any) into the steps below.
+
 ### 1. Collect PR evidence
 
-Run the skill-local collector at `scripts/collect-pr-evidence.mjs` with `node`. For a quick smoke test, pass `--limit 5`.
+Run the skill-local collector at `scripts/collect-pr-evidence.mjs` with `node`, passing the flag chosen in step 0 (`--limit 100` for bootstrap, `--since <generated_at>` for incremental). For a quick smoke test, pass `--limit 5`.
 
 The script handles deterministic collection work:
 
@@ -132,12 +141,31 @@ Example:
 
 ### 5. Write .princi/pr-best-practices.md
 
-Ensure the `.princi/` directory exists at the repository root (create it if missing), then write to `.princi/pr-best-practices.md` (overwrite if it exists):
+Ensure the `.princi/` directory exists at the repository root (create it if missing), then write to `.princi/pr-best-practices.md`.
+
+**BOOTSTRAP mode** — write the whole file (overwrite if it exists).
+
+**INCREMENTAL mode** — merge the newly synthesized rules into the existing file rather than overwriting wholesale:
+
+- **Append** rules that are genuinely new.
+- **Skip** any new rule whose title matches an existing rule (dedupe by title); if the new evidence adds a PR not already cited, append that PR link to the existing rule's `Source:` instead of creating a duplicate. This also covers PRs on the `--since` boundary day that were already in the prior run.
+- **Surface contradictions** to the user (a new rule that conflicts with an existing one) — do not silently overwrite; ask which wins.
+- Recompute the `rules:` total and refresh the frontmatter/header counts.
+
+In both modes the file starts with YAML frontmatter — this `generated_at` is what the 2-week staleness gate and the next incremental `--since` read, so it must always be present and current:
 
 ```markdown
+---
+generator: princi-update-pr-best-practices
+generated_at: YYYY-MM-DD
+repository: owner/repo
+prs_analyzed: N
+rules: R
+---
+
 # Team best practices (from GitHub PRs)
 
-> Generated from GitHub PR history on YYYY-MM-DD. Re-run `/pr-best-practices` to refresh (overwrites this file).
+> Last updated YYYY-MM-DD from GitHub PR history. Re-run `/princi-update-pr-best-practices` to refresh (bootstrap if absent, else incremental merge).
 > Repository: owner/repo · PRs analyzed: N · Rules: R
 >
 > Reusable conventions for future PRs and design docs — not a log of one-off fixes.

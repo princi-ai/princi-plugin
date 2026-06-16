@@ -1,15 +1,15 @@
 ---
-name: princi-review-pr
+name: princi-code-review
 description: |
   Personal PR review grounded in your own context — Drive docs, past coding-agent
   chats, and PR history — before you push or request review.
   Use when: about to open or push a PR; want a second opinion on your own changes;
-  use phrases like "review my PR", "check this PR", "princi-review-pr <number>".
-  Example: "/princi-review-pr 42" or "/princi-review-pr 42 owner/repo"
+  use phrases like "review my PR", "check this PR", "princi-code-review <number>".
+  Example: "/princi-code-review 42" or "/princi-code-review 42 owner/repo"
 origin: plugin
 ---
 
-# princi-review-pr
+# princi-code-review
 
 Personal pre-push PR review that grounds the review in your own context: Google Drive docs, past coding-agent chats, and PR history — retrieved via Princi. Unlike team-oriented review tools, this surfaces what *you* already decided, patterns *you* have established, and issues relative to your own prior work.
 
@@ -29,13 +29,13 @@ If you cannot do either, stay silent. If your internal confidence is below ~80%,
 
 ## Locating the best-practices file
 
-The skill reads from and writes to a personal best-practices file. The canonical location is `.princi/pr-best-practices.md` at the repo root — the same path written by `/princi-create-pr-best-practices`. Resolve it relative to the repo root (e.g. `git rev-parse --show-toplevel`), never the current working directory.
+The skill reads from and writes to a personal best-practices file. The canonical location is `.princi/pr-best-practices.md` at the repo root — the same path written by `/princi-update-pr-best-practices`. Resolve it relative to the repo root (e.g. `git rev-parse --show-toplevel`), never the current working directory.
 
 **Resolution order** (use the first match):
 
 1. **Explicit override:** if the user has previously told you where to store it (check memory or CLAUDE.md for a `PRINCI_BEST_PRACTICES_PATH` or equivalent), use that path.
 2. **Canonical repo-local path:** `<repo-root>/.princi/pr-best-practices.md`.
-3. **Create it:** if no file is found and Step 8 wants to write one, create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed). Mention to the user that this is the canonical location shared with `/princi-create-pr-best-practices`.
+3. **Create it:** if no file is found and Step 8 wants to write one, create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed). Mention to the user that this is the canonical location shared with `/princi-update-pr-best-practices`.
 
 ---
 
@@ -70,7 +70,7 @@ If the Princi MCP server's **search** tool is unavailable, not connected, or ret
 ## Args
 
 ```
-/princi-review-pr <PR #> [owner/repo]
+/princi-code-review <PR #> [owner/repo]
 ```
 
 - `<PR #>` — required. The pull request number to review.
@@ -107,10 +107,26 @@ Resolve the repo:
 5. If still nothing is found, respond with:
    ```
    No PR found for branch `<current-branch>` in `<owner/repo>`.
-   Usage: /princi-review-pr <PR #> [owner/repo]
-   Example: /princi-review-pr 42
+   Usage: /princi-code-review <PR #> [owner/repo]
+   Example: /princi-code-review 42
    ```
    and stop.
+
+### Step 1.5: Ensure the best-practices file is fresh (auto-refresh in a sub-agent)
+
+The review is only as good as the best-practices file it cites. Before reviewing, make sure that file exists and is not stale — regenerate it if needed, **in a separate sub-agent** so the 100-PR analysis never pollutes this review's context.
+
+1. **Resolve the path** using "Locating the best-practices file" above.
+2. **Decide if it is stale** — deterministically, not by eyeballing. The file written by `/princi-update-pr-best-practices` carries a YAML frontmatter `generated_at: YYYY-MM-DD`. Treat the file as **stale** when it is missing, has no `generated_at`, or `generated_at` is more than **14 days** before today. A one-liner:
+   ```bash
+   # exits 0 = fresh, 1 = stale (also stale if file/field absent)
+   node -e 'const fs=require("fs");const p=process.argv[1];try{const m=fs.readFileSync(p,"utf8").match(/^---[\s\S]*?generated_at:\s*([0-9-]{10})/);process.exit(m&&(Date.now()-Date.parse(m[1]))/864e5<=14?0:1)}catch{process.exit(1)}' "<resolved-path>"
+   ```
+3. **If stale (or absent), refresh it in a sub-agent.** Spawn one general-purpose sub-agent (via the Task tool) with a prompt along these lines, then **wait** for it to finish before continuing:
+   > Invoke the `princi-update-pr-best-practices` skill for the repository at `<repo-root>` to refresh `<resolved-path>`. Do not commit or push. Reply with one line: the rule count and the new `generated_at`.
+
+   If fresh, skip the refresh entirely.
+4. Proceed to Step 2 and review against the now-current file. (`princi-update-pr-best-practices` only writes the working-tree file — it never commits or pushes.)
 
 ### Step 2: Fetch PR evidence via `gh`
 
@@ -325,7 +341,7 @@ Runs at the end of every review. A rule is **only promoted** when the same patte
 
 ```markdown
 ---
-## princi-review-pr — [PR title] (#<number>)
+## princi-code-review — [PR title] (#<number>)
 **Branch:** `<head>` → `<base>` · **Author:** <author> · **Files changed:** <N>
 **Princi context:** [N] sources · [Drive / Gmail / Memory — list which contributed]
 
@@ -361,7 +377,7 @@ Verdict: request_changes | comment
 - **[Rule title]** — already in the best-practices file, confirmed by this PR
 
 ---
-*Reviewed by /princi-review-pr · [date]*
+*Reviewed by /princi-code-review · [date]*
 ```
 
 ---
@@ -385,4 +401,4 @@ Verdict: request_changes | comment
 - **`gh` not installed or not authenticated**: "Run `gh auth login` to authenticate, then retry."
 - **PR not found**: "PR #N not found in `owner/repo`. Check the number and repo, then retry."
 - **Princi MCP unavailable**: "The Princi MCP search tool is not available. Re-run the OAuth sign-in flow via the plugin."
-- **`git remote` fails (not in a git repo)**: "Could not determine repo from git remote. Pass `owner/repo` explicitly: `/princi-review-pr <PR#> owner/repo`."
+- **`git remote` fails (not in a git repo)**: "Could not determine repo from git remote. Pass `owner/repo` explicitly: `/princi-code-review <PR#> owner/repo`."

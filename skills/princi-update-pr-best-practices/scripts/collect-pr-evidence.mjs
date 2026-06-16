@@ -19,6 +19,7 @@ function parseArgs(argv) {
   const args = {
     limit: DEFAULT_LIMIT,
     out: DEFAULT_OUT,
+    since: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -31,6 +32,10 @@ function parseArgs(argv) {
       args.out = argv[++i] ?? DEFAULT_OUT;
     } else if (arg.startsWith("--out=")) {
       args.out = arg.slice("--out=".length);
+    } else if (arg === "--since") {
+      args.since = argv[++i] ?? "";
+    } else if (arg.startsWith("--since=")) {
+      args.since = arg.slice("--since=".length);
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -43,14 +48,22 @@ function parseArgs(argv) {
     throw new Error("--limit must be an integer from 1 to 100");
   }
 
+  if (args.since !== null && !/^\d{4}-\d{2}-\d{2}$/.test(args.since)) {
+    throw new Error("--since must be an ISO date (YYYY-MM-DD)");
+  }
+
   return args;
 }
 
 function printHelp() {
-  console.log(`Usage: node ${SCRIPT_PATH} [--limit N] [--out path]
+  console.log(`Usage: node ${SCRIPT_PATH} [--limit N] [--out path] [--since YYYY-MM-DD]
 
-Collects GitHub PR evidence for /pr-best-practices and writes one LLM-readable
-markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}`);
+Collects GitHub PR evidence for /princi-update-pr-best-practices and writes one
+LLM-readable markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}
+
+  --since  Incremental mode: keep only PRs merged/closed on or after this date.
+           Filters within the --limit window (PRs are fetched newest-updated
+           first, so a short window stays well inside the cap).`);
 }
 
 async function runGh(args, options = {}) {
@@ -103,7 +116,13 @@ async function resolveRepo() {
   }
 }
 
-async function fetchClosedPrs(repo, limit) {
+function closedOnOrAfter(pr, since) {
+  const value = pr.merged_at || pr.closed_at;
+  if (!value) return false;
+  return String(value).slice(0, 10) >= since;
+}
+
+async function fetchClosedPrs(repo, limit, since = null) {
   const perPage = 10;
   const pages = Math.ceil(limit / perPage);
   const requests = Array.from({ length: pages }, (_, i) => {
@@ -121,6 +140,10 @@ async function fetchClosedPrs(repo, limit) {
     for (const pr of page ?? []) {
       if (seen.has(pr.number)) continue;
       seen.add(pr.number);
+      // Incremental mode: PRs are sorted by `updated` (not close date), so a
+      // recently-closed PR could sit below a recently-commented older one. We
+      // filter the whole fetched window rather than early-break on order.
+      if (since && !closedOnOrAfter(pr, since)) continue;
       prs.push(pr);
       if (prs.length >= limit) return prs;
     }
@@ -366,7 +389,7 @@ function quoteList(values, itemLimit = 120) {
   return values.map((value) => quote(value, itemLimit)).join(", ");
 }
 
-function buildMarkdown(repo, detailsList, outputPath) {
+function buildMarkdown(repo, detailsList, outputPath, since = null) {
   const now = new Date().toISOString();
   const summary = {
     prs: detailsList.length,
@@ -389,6 +412,7 @@ function buildMarkdown(repo, detailsList, outputPath) {
     `- Repository: ${repo}`,
     `- Generated at: ${now}`,
     `- Output target: pr-best-practices.md`,
+    `- Mode: ${since ? `incremental (PRs merged/closed on or after ${since})` : "full scan"}`,
     `- PRs analyzed: ${summary.prs}`,
     `- Rollbacks: ${summary.rollbacks}`,
     `- Follow-on fixes: ${summary.followOns}`,
@@ -467,7 +491,7 @@ function buildMarkdown(repo, detailsList, outputPath) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repo = await resolveRepo();
-  const prs = await fetchClosedPrs(repo, args.limit);
+  const prs = await fetchClosedPrs(repo, args.limit, args.since);
   const details = await mapLimit(prs, 10, (pr) => fetchPrDetails(repo, pr));
 
   for (const detail of details) {
@@ -479,7 +503,7 @@ async function main() {
   }
 
   const outPath = resolve(process.cwd(), args.out);
-  const markdown = buildMarkdown(repo, details, args.out);
+  const markdown = buildMarkdown(repo, details, args.out, args.since);
   await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, markdown, "utf8");
 
