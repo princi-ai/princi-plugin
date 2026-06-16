@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 
 const DEFAULT_LIMIT = 100;
+const INCREMENTAL_CAP = 500;
 const DEFAULT_OUT = ".tmp/pr-best-practices-input.md";
 const BODY_LIMIT = 1500;
 const REVIEW_LIMIT = 500;
@@ -61,10 +62,11 @@ function printHelp() {
 Collects GitHub PR evidence for /princi-update-pr-best-practices and writes one
 LLM-readable markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}
 
-  --since  Incremental mode: keep only PRs merged/closed on or after this point.
+  --since  Incremental mode: collect PRs merged/closed on or after this point.
            Accepts an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ).
-           Filters within the --limit window (PRs are fetched newest-updated
-           first, so a short window stays well inside the cap).`);
+           Queries the Search API by close date (closed:>=<since>), so it can't
+           miss an in-window PR; --limit is ignored in this mode (a ${INCREMENTAL_CAP}-PR
+           safety cap applies, with a warning if exceeded).`);
 }
 
 async function runGh(args, options = {}) {
@@ -125,7 +127,7 @@ function closedOnOrAfter(pr, since) {
   return String(value) >= since;
 }
 
-async function fetchClosedPrs(repo, limit, since = null) {
+async function fetchClosedPrs(repo, limit) {
   const perPage = 10;
   const pages = Math.ceil(limit / perPage);
   const requests = Array.from({ length: pages }, (_, i) => {
@@ -143,16 +145,57 @@ async function fetchClosedPrs(repo, limit, since = null) {
     for (const pr of page ?? []) {
       if (seen.has(pr.number)) continue;
       seen.add(pr.number);
-      // Incremental mode: PRs are sorted by `updated` (not close date), so a
-      // recently-closed PR could sit below a recently-commented older one. We
-      // filter the whole fetched window rather than early-break on order.
-      if (since && !closedOnOrAfter(pr, since)) continue;
       prs.push(pr);
       if (prs.length >= limit) return prs;
     }
   }
 
   return prs;
+}
+
+// Incremental mode: query by close date via the Search API. The `pulls` list is
+// only sortable by `updated`, so a PR that closed in-window but whose `updated`
+// time was pushed down by unrelated comment activity could fall outside any
+// fixed `updated`-window and be missed permanently. Searching `closed:>=<since>`
+// returns exactly the in-window PRs — bounded by real matches (small for a short
+// window) plus a safety cap, never an arbitrary slice.
+async function fetchClosedPrsSince(repo, since, cap) {
+  const q = `repo:${repo} type:pr is:closed closed:>=${since}`;
+  const pages = await ghJsonWithRetry([
+    "api",
+    "search/issues",
+    "-X",
+    "GET",
+    "--paginate",
+    "--slurp",
+    "-f",
+    `q=${q}`,
+    "-F",
+    "per_page=100",
+  ]);
+  const items = (Array.isArray(pages) ? pages : [pages]).flatMap(
+    (page) => page?.items ?? [],
+  );
+
+  const numbers = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (seen.has(item.number) || numbers.length >= cap) continue;
+    seen.add(item.number);
+    numbers.push(item.number);
+  }
+  if (numbers.length >= cap && items.length > cap) {
+    console.error(
+      `WARNING: more than ${cap} PRs closed since ${since}; only the first ${cap} were taken. Narrow --since or raise INCREMENTAL_CAP — do not treat this run as complete.`,
+    );
+  }
+
+  // Fetch full PR objects so the downstream pipeline shape is unchanged, then
+  // enforce the exact `since` (the search `closed:` qualifier can be day-granular).
+  const full = await mapLimit(numbers, 10, (n) =>
+    ghJsonWithRetry(["api", `repos/${repo}/pulls/${n}`], { allowFailure: true }),
+  );
+  return full.filter((pr) => pr && closedOnOrAfter(pr, since));
 }
 
 async function mapLimit(items, concurrency, mapper) {
@@ -494,7 +537,9 @@ function buildMarkdown(repo, detailsList, outputPath, since = null) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repo = await resolveRepo();
-  const prs = await fetchClosedPrs(repo, args.limit, args.since);
+  const prs = args.since
+    ? await fetchClosedPrsSince(repo, args.since, INCREMENTAL_CAP)
+    : await fetchClosedPrs(repo, args.limit);
   const details = await mapLimit(prs, 10, (pr) => fetchPrDetails(repo, pr));
 
   for (const detail of details) {

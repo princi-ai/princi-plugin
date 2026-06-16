@@ -15,7 +15,7 @@ Creates or refreshes `.princi/pr-best-practices.md` in the repo root. On first r
 Resolve `.princi/pr-best-practices.md` at the repo root (`git rev-parse --show-toplevel`).
 
 - **No file, or the file has no YAML frontmatter `generated_at`** → **BOOTSTRAP**: collect with `--limit 100` (full scan) and synthesize the whole file. This is the first-run path.
-- **File exists with frontmatter `generated_at`** (an ISO date or timestamp) → **INCREMENTAL**: collect with `--since <generated_at>` so only PRs merged/closed on or after that point are fetched, synthesize rules from just those PRs, then **merge** into the existing file (see step 5). If the collector reports `PRs analyzed: 0`, there is nothing new — leave the file untouched and report "already current," then stop.
+- **File exists with frontmatter `generated_at`** (an ISO date or timestamp) → **INCREMENTAL**: collect with `--since <generated_at>` so only PRs merged/closed on or after that point are fetched, synthesize rules from just those PRs, then **merge** into the existing file (see step 5). If the collector reports `PRs analyzed: 0`, there are no new rules to merge — but **still rewrite the frontmatter `generated_at` to the current timestamp** (a no-op "touch") so the staleness gate does not re-trigger this refresh on every later review of a quiet repo. Report "already current — timestamp refreshed," then stop.
 
 Carry the chosen mode (and `--since` date, if any) into the steps below.
 
@@ -150,9 +150,9 @@ Ensure the `.princi/` directory exists at the repository root (create it if miss
 - **Append** rules that are genuinely new.
 - **Skip** any new rule whose title matches an existing rule (dedupe by title); if the new evidence adds a PR not already cited, append that PR link to the existing rule's `Source:` instead of creating a duplicate. This also covers PRs on the `--since` boundary day that were already in the prior run.
 - **Surface contradictions** to the user (a new rule that conflicts with an existing one) — do not silently overwrite; ask which wins.
-- Recompute the rule total and refresh the counts in the human header line.
+- Refresh the `PRs analyzed` count in the human header line. Do not maintain a rule count — it goes stale on manual edits and nothing reads it.
 
-In both modes the file starts with minimal YAML frontmatter — `generated_at` is the only machine-read field (the 2-week staleness gate and the next incremental `--since` read it), so it must always be present and current. Write it as a full ISO 8601 timestamp so an incremental run can fetch PRs since the exact moment of the last run. Keep the frontmatter to these two keys; repository, PR count, and rule count live in the human-readable header below, not the frontmatter:
+In both modes the file starts with minimal YAML frontmatter — `generated_at` is the only machine-read field (the 2-week staleness gate and the next incremental `--since` read it), so it must always be present and current. Write it as a full ISO 8601 timestamp so an incremental run can fetch PRs since the exact moment of the last run. Keep the frontmatter to these two keys; repository and PR count live in the human-readable header below, not the frontmatter:
 
 ```markdown
 ---
@@ -163,7 +163,7 @@ generated_at: YYYY-MM-DDThh:mm:ssZ
 # Team best practices (from GitHub PRs)
 
 > Last updated YYYY-MM-DD from GitHub PR history. Re-run `/princi-update-pr-best-practices` to refresh (bootstrap if absent, else incremental merge).
-> Repository: owner/repo · PRs analyzed: N · Rules: R
+> Repository: owner/repo · PRs analyzed: N
 >
 > Reusable conventions for future PRs and design docs — not a log of one-off fixes.
 
