@@ -66,7 +66,7 @@ LLM-readable markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}
            Accepts an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ).
            Queries the Search API by close date (closed:>=<since>), so it can't
            miss an in-window PR; --limit is ignored in this mode (a ${INCREMENTAL_CAP}-PR
-           safety cap applies, with a warning if exceeded).`);
+           safety cap applies; the run fails if exceeded).`);
 }
 
 async function runGh(args, options = {}) {
@@ -180,13 +180,15 @@ async function fetchClosedPrsSince(repo, since, cap) {
   const numbers = [];
   const seen = new Set();
   for (const item of items) {
-    if (seen.has(item.number) || numbers.length >= cap) continue;
+    if (seen.has(item.number)) continue;
     seen.add(item.number);
     numbers.push(item.number);
   }
-  if (numbers.length >= cap && items.length > cap) {
-    console.error(
-      `WARNING: more than ${cap} PRs closed since ${since}; only the first ${cap} were taken. Narrow --since or raise INCREMENTAL_CAP — do not treat this run as complete.`,
+  // Fail loud rather than silently truncate: a partial incremental sync would
+  // advance `generated_at` past PRs it never processed, dropping them forever.
+  if (numbers.length > cap) {
+    throw new Error(
+      `INCREMENTAL_CAP exceeded: ${numbers.length} PRs closed since ${since} (cap ${cap}). Refusing a partial sync that a later run would treat as complete — narrow --since or raise INCREMENTAL_CAP, then retry.`,
     );
   }
 

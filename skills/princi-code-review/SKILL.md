@@ -33,9 +33,8 @@ The skill reads from and writes to a personal best-practices file. The canonical
 
 **Resolution order** (use the first match):
 
-1. **Explicit override:** if the user has previously told you where to store it (check memory or CLAUDE.md for a `PRINCI_BEST_PRACTICES_PATH` or equivalent), use that path.
-2. **Canonical repo-local path:** `<repo-root>/.princi/pr-best-practices.md`.
-3. **Create it:** if no file is found and Step 8 wants to write one, create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed). Mention to the user that this is the canonical location shared with `/princi-update-pr-best-practices`.
+1. **Canonical repo-local path:** `<repo-root>/.princi/pr-best-practices.md`.
+2. **Create it:** if no file is found and Step 8 wants to write one, create `<repo-root>/.princi/pr-best-practices.md` (creating the `.princi/` directory if needed). Mention to the user that this is the canonical location shared with `/princi-update-pr-best-practices`.
 
 ---
 

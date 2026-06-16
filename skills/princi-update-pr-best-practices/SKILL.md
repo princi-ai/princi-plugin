@@ -33,6 +33,8 @@ The script handles deterministic collection work:
 
 Do not write `.tmp/pr-best-practices-summary.json`; the summary is embedded at the top of `.tmp/pr-best-practices-input.md`.
 
+If the collector exits non-zero (e.g. an incremental window larger than the safety cap), **stop** — surface the error and do **not** advance `generated_at`. A partial collection must never be treated as a complete refresh.
+
 ### 2. Read the synthesis input
 
 Read `.tmp/pr-best-practices-input.md`. It contains:
