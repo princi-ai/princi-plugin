@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 — 2026-06-16
+
+- Rename `/princi-review-pr` → **`/princi-code-review`** (across the plugin and the app UI) for product-consistent naming
+- Rename `/princi-create-pr-best-practices` → **`/princi-update-pr-best-practices`**; the skill now **bootstraps** when no `.princi/pr-best-practices.md` exists and does an **incremental merge** otherwise — synthesizing only PRs closed since the recorded `generated_at` and merging them in (collector gains a `--since YYYY-MM-DD` flag)
+- The generated `.princi/pr-best-practices.md` now carries YAML frontmatter (`generated_at`, `repository`, `prs_analyzed`, `rules`) as the machine-readable source of truth for staleness + the next incremental window
+- `/princi-code-review` now **auto-refreshes** the best-practices file before reviewing — generating it if absent or older than 2 weeks, in a separate sub-agent so the PR-history analysis stays out of the review's context
+- Bump version to 0.1.10 across all plugin manifests (incl. `desktop/manifest.json`, which was lagging at 0.1.8)
+
 ## 0.1.9 — 2026-06-05
 
 - `/princi-review-pr`: add a **suppression gate** to Step 6 so findings already declined-with-reason in a PR's review comments (the prior-decisions ledger) are never re-raised — fixes the repeated "stranded users" style noise where a concern the author already answered keeps coming back; output gains an "Already addressed" section listing what was deduped

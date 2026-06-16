@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 
 const DEFAULT_LIMIT = 100;
+const INCREMENTAL_CAP = 500;
 const DEFAULT_OUT = ".tmp/pr-best-practices-input.md";
 const BODY_LIMIT = 1500;
 const REVIEW_LIMIT = 500;
@@ -19,6 +20,7 @@ function parseArgs(argv) {
   const args = {
     limit: DEFAULT_LIMIT,
     out: DEFAULT_OUT,
+    since: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -31,6 +33,10 @@ function parseArgs(argv) {
       args.out = argv[++i] ?? DEFAULT_OUT;
     } else if (arg.startsWith("--out=")) {
       args.out = arg.slice("--out=".length);
+    } else if (arg === "--since") {
+      args.since = argv[++i] ?? "";
+    } else if (arg.startsWith("--since=")) {
+      args.since = arg.slice("--since=".length);
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -43,14 +49,24 @@ function parseArgs(argv) {
     throw new Error("--limit must be an integer from 1 to 100");
   }
 
+  if (args.since !== null && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}Z?)?$/.test(args.since)) {
+    throw new Error("--since must be an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ)");
+  }
+
   return args;
 }
 
 function printHelp() {
-  console.log(`Usage: node ${SCRIPT_PATH} [--limit N] [--out path]
+  console.log(`Usage: node ${SCRIPT_PATH} [--limit N] [--out path] [--since YYYY-MM-DD]
 
-Collects GitHub PR evidence for /pr-best-practices and writes one LLM-readable
-markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}`);
+Collects GitHub PR evidence for /princi-update-pr-best-practices and writes one
+LLM-readable markdown input file. Defaults: --limit 100 --out ${DEFAULT_OUT}
+
+  --since  Incremental mode: collect PRs merged/closed on or after this point.
+           Accepts an ISO date (YYYY-MM-DD) or timestamp (YYYY-MM-DDThh:mm:ssZ).
+           Queries the Search API by close date (closed:>=<since>), so it can't
+           miss an in-window PR; --limit is ignored in this mode (a ${INCREMENTAL_CAP}-PR
+           safety cap applies; the run fails if exceeded).`);
 }
 
 async function runGh(args, options = {}) {
@@ -103,6 +119,14 @@ async function resolveRepo() {
   }
 }
 
+function closedOnOrAfter(pr, since) {
+  const value = pr.merged_at || pr.closed_at;
+  if (!value) return false;
+  // ISO 8601 sorts lexically, so a direct string compare is correct for both a
+  // date-only `since` (includes the whole boundary day) and a full timestamp.
+  return String(value) >= since;
+}
+
 async function fetchClosedPrs(repo, limit) {
   const perPage = 10;
   const pages = Math.ceil(limit / perPage);
@@ -127,6 +151,55 @@ async function fetchClosedPrs(repo, limit) {
   }
 
   return prs;
+}
+
+// Incremental mode: query by close date via the Search API. The `pulls` list is
+// only sortable by `updated`, so a PR that closed in-window but whose `updated`
+// time was pushed down by unrelated comment activity could fall outside any
+// fixed `updated`-window and be missed permanently. Searching `closed:>=<since>`
+// returns exactly the in-window PRs — bounded by real matches (small for a short
+// window) plus a safety cap, never an arbitrary slice.
+async function fetchClosedPrsSince(repo, since, cap) {
+  const q = `repo:${repo} type:pr is:closed closed:>=${since}`;
+  const pages = await ghJsonWithRetry([
+    "api",
+    "search/issues",
+    "-X",
+    "GET",
+    "--paginate",
+    "--slurp",
+    "-f",
+    `q=${q}`,
+    "-F",
+    "per_page=100",
+  ]);
+  const items = (Array.isArray(pages) ? pages : [pages]).flatMap(
+    (page) => page?.items ?? [],
+  );
+
+  const numbers = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (seen.has(item.number)) continue;
+    seen.add(item.number);
+    numbers.push(item.number);
+  }
+  // Fail loud rather than silently truncate: a partial incremental sync would
+  // advance `generated_at` past PRs it never processed, dropping them forever.
+  if (numbers.length > cap) {
+    throw new Error(
+      `INCREMENTAL_CAP exceeded: ${numbers.length} PRs closed since ${since} (cap ${cap}). Refusing a partial sync that a later run would treat as complete — narrow --since or raise INCREMENTAL_CAP, then retry.`,
+    );
+  }
+
+  // Fetch full PR objects so the downstream pipeline shape is unchanged, then
+  // enforce the exact `since` (the search `closed:` qualifier can be day-granular).
+  // A per-PR fetch failure must throw (no allowFailure): silently dropping a PR
+  // here while the run still advances `generated_at` would skip it permanently.
+  const full = await mapLimit(numbers, 10, (n) =>
+    ghJsonWithRetry(["api", `repos/${repo}/pulls/${n}`]),
+  );
+  return full.filter((pr) => pr && closedOnOrAfter(pr, since));
 }
 
 async function mapLimit(items, concurrency, mapper) {
@@ -366,8 +439,8 @@ function quoteList(values, itemLimit = 120) {
   return values.map((value) => quote(value, itemLimit)).join(", ");
 }
 
-function buildMarkdown(repo, detailsList, outputPath) {
-  const now = new Date().toISOString();
+function buildMarkdown(repo, detailsList, outputPath, since = null, watermark = new Date().toISOString()) {
+  const now = watermark;
   const summary = {
     prs: detailsList.length,
     rollbacks: 0,
@@ -387,8 +460,9 @@ function buildMarkdown(repo, detailsList, outputPath) {
     "# PR Best Practices Synthesis Input",
     "",
     `- Repository: ${repo}`,
-    `- Generated at: ${now}`,
+    `- Generated at (set the new frontmatter generated_at to this exact value): ${now}`,
     `- Output target: pr-best-practices.md`,
+    `- Mode: ${since ? `incremental (PRs merged/closed on or after ${since})` : "full scan"}`,
     `- PRs analyzed: ${summary.prs}`,
     `- Rollbacks: ${summary.rollbacks}`,
     `- Follow-on fixes: ${summary.followOns}`,
@@ -467,7 +541,16 @@ function buildMarkdown(repo, detailsList, outputPath) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repo = await resolveRepo();
-  const prs = await fetchClosedPrs(repo, args.limit);
+  // Capture the watermark BEFORE fetching: the next incremental --since must be
+  // the moment collection started, not when it finished. A PR that closes mid-run
+  // is then re-fetched next time (dedup-by-title handles the overlap) instead of
+  // falling into a gap between the search snapshot and an end-of-run timestamp.
+  // Truncate to whole seconds so it matches the YYYY-MM-DDThh:mm:ssZ format that
+  // --since accepts; flooring keeps the boundary slightly earlier, never later.
+  const watermark = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  const prs = args.since
+    ? await fetchClosedPrsSince(repo, args.since, INCREMENTAL_CAP)
+    : await fetchClosedPrs(repo, args.limit);
   const details = await mapLimit(prs, 10, (pr) => fetchPrDetails(repo, pr));
 
   for (const detail of details) {
@@ -479,7 +562,7 @@ async function main() {
   }
 
   const outPath = resolve(process.cwd(), args.out);
-  const markdown = buildMarkdown(repo, details, args.out);
+  const markdown = buildMarkdown(repo, details, args.out, args.since, watermark);
   await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, markdown, "utf8");
 
