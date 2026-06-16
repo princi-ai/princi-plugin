@@ -194,8 +194,10 @@ async function fetchClosedPrsSince(repo, since, cap) {
 
   // Fetch full PR objects so the downstream pipeline shape is unchanged, then
   // enforce the exact `since` (the search `closed:` qualifier can be day-granular).
+  // A per-PR fetch failure must throw (no allowFailure): silently dropping a PR
+  // here while the run still advances `generated_at` would skip it permanently.
   const full = await mapLimit(numbers, 10, (n) =>
-    ghJsonWithRetry(["api", `repos/${repo}/pulls/${n}`], { allowFailure: true }),
+    ghJsonWithRetry(["api", `repos/${repo}/pulls/${n}`]),
   );
   return full.filter((pr) => pr && closedOnOrAfter(pr, since));
 }
@@ -437,8 +439,8 @@ function quoteList(values, itemLimit = 120) {
   return values.map((value) => quote(value, itemLimit)).join(", ");
 }
 
-function buildMarkdown(repo, detailsList, outputPath, since = null) {
-  const now = new Date().toISOString();
+function buildMarkdown(repo, detailsList, outputPath, since = null, watermark = new Date().toISOString()) {
+  const now = watermark;
   const summary = {
     prs: detailsList.length,
     rollbacks: 0,
@@ -458,7 +460,7 @@ function buildMarkdown(repo, detailsList, outputPath, since = null) {
     "# PR Best Practices Synthesis Input",
     "",
     `- Repository: ${repo}`,
-    `- Generated at: ${now}`,
+    `- Generated at (set the new frontmatter generated_at to this exact value): ${now}`,
     `- Output target: pr-best-practices.md`,
     `- Mode: ${since ? `incremental (PRs merged/closed on or after ${since})` : "full scan"}`,
     `- PRs analyzed: ${summary.prs}`,
@@ -539,6 +541,11 @@ function buildMarkdown(repo, detailsList, outputPath, since = null) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repo = await resolveRepo();
+  // Capture the watermark BEFORE fetching: the next incremental --since must be
+  // the moment collection started, not when it finished. A PR that closes mid-run
+  // is then re-fetched next time (dedup-by-title handles the overlap) instead of
+  // falling into a gap between the search snapshot and an end-of-run timestamp.
+  const watermark = new Date().toISOString();
   const prs = args.since
     ? await fetchClosedPrsSince(repo, args.since, INCREMENTAL_CAP)
     : await fetchClosedPrs(repo, args.limit);
@@ -553,7 +560,7 @@ async function main() {
   }
 
   const outPath = resolve(process.cwd(), args.out);
-  const markdown = buildMarkdown(repo, details, args.out, args.since);
+  const markdown = buildMarkdown(repo, details, args.out, args.since, watermark);
   await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, markdown, "utf8");
 

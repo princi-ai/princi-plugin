@@ -15,7 +15,7 @@ Creates or refreshes `.princi/pr-best-practices.md` in the repo root. On first r
 Resolve `.princi/pr-best-practices.md` at the repo root (`git rev-parse --show-toplevel`).
 
 - **No file, or the file has no YAML frontmatter `generated_at`** → **BOOTSTRAP**: collect with `--limit 100` (full scan) and synthesize the whole file. This is the first-run path.
-- **File exists with frontmatter `generated_at`** (an ISO date or timestamp) → **INCREMENTAL**: collect with `--since <generated_at>` so only PRs merged/closed on or after that point are fetched, synthesize rules from just those PRs, then **merge** into the existing file (see step 5). If the collector reports `PRs analyzed: 0`, there are no new rules to merge — but **still rewrite the frontmatter `generated_at` to the current timestamp** (a no-op "touch") so the staleness gate does not re-trigger this refresh on every later review of a quiet repo. Report "already current — timestamp refreshed," then stop.
+- **File exists with frontmatter `generated_at`** (an ISO date or timestamp) → **INCREMENTAL**: collect with `--since <generated_at>` so only PRs merged/closed on or after that point are fetched, synthesize rules from just those PRs, then **merge** into the existing file (see step 5). If the collector reports `PRs analyzed: 0`, there are no new rules to merge — but **still rewrite the frontmatter `generated_at` to the collector's `Generated at` watermark** (a no-op "touch") so the staleness gate does not re-trigger this refresh on every later review of a quiet repo. Report "already current — timestamp refreshed," then stop.
 
 Carry the chosen mode (and `--since` date, if any) into the steps below.
 
@@ -154,7 +154,7 @@ Ensure the `.princi/` directory exists at the repository root (create it if miss
 - **Surface contradictions** to the user (a new rule that conflicts with an existing one) — do not silently overwrite; ask which wins.
 - Refresh the `PRs analyzed` count in the human header line. Do not maintain a rule count — it goes stale on manual edits and nothing reads it.
 
-In both modes the file starts with minimal YAML frontmatter — `generated_at` is the only machine-read field (the 2-week staleness gate and the next incremental `--since` read it), so it must always be present and current. Write it as a full ISO 8601 timestamp so an incremental run can fetch PRs since the exact moment of the last run. Keep the frontmatter to these two keys; repository and PR count live in the human-readable header below, not the frontmatter:
+In both modes the file starts with minimal YAML frontmatter — `generated_at` is the only machine-read field (the 2-week staleness gate and the next incremental `--since` read it), so it must always be present and current. Set it to the collector's `Generated at` watermark (the full ISO 8601 timestamp at the top of `.tmp/pr-best-practices-input.md`), **not** the current wall-clock time — that watermark is captured *before* PR collection, so a PR that closes mid-run is re-fetched on the next incremental run instead of falling into a gap. Keep the frontmatter to these two keys; repository and PR count live in the human-readable header below, not the frontmatter:
 
 ```markdown
 ---
