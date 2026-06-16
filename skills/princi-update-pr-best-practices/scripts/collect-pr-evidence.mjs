@@ -545,7 +545,9 @@ async function main() {
   // the moment collection started, not when it finished. A PR that closes mid-run
   // is then re-fetched next time (dedup-by-title handles the overlap) instead of
   // falling into a gap between the search snapshot and an end-of-run timestamp.
-  const watermark = new Date().toISOString();
+  // Truncate to whole seconds so it matches the YYYY-MM-DDThh:mm:ssZ format that
+  // --since accepts; flooring keeps the boundary slightly earlier, never later.
+  const watermark = new Date().toISOString().replace(/\.\d+Z$/, "Z");
   const prs = args.since
     ? await fetchClosedPrsSince(repo, args.since, INCREMENTAL_CAP)
     : await fetchClosedPrs(repo, args.limit);
