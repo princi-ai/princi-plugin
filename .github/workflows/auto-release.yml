@@ -82,7 +82,7 @@ jobs:
           mkdir -p dist
           npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
-            .claude-plugin .cursor-plugin .mcp.json cursor desktop skills \
+            .claude-plugin .cursor-plugin .mcp.json assets cursor desktop skills \
             README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
 

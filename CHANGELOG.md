@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11 — 2026-06-17
+
+- Add `logo` to `.cursor-plugin` manifests so the Princi brand mark renders in Cursor's plugin tile
+- Include `assets/` in release tarballs so `assets/logo.png` resolves in packaged plugin artifacts
+- Bump version to 0.1.11 across all plugin manifests
+
 ## 0.1.10 — 2026-06-16
 
 - Rename `/princi-review-pr` → **`/princi-code-review`** (across the plugin and the app UI) for product-consistent naming

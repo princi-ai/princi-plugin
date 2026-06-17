@@ -22,3 +22,19 @@ jobs:
             echo "Validating $f"
             python3 -m json.tool "$f" > /dev/null
           done
+
+      - name: Verify plugin logos exist
+        run: |
+          set -e
+          for f in \
+            .claude-plugin/plugin.json \
+            .claude-plugin/marketplace.json \
+            .cursor-plugin/plugin.json \
+            .cursor-plugin/marketplace.json; do
+            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d['plugins'][0]['logo'])")
+            if [ ! -f "$logo" ]; then
+              echo "::error file=$f::logo path missing: $logo"
+              exit 1
+            fi
+            echo "$f -> $logo"
+          done
