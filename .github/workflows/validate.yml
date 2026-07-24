@@ -30,11 +30,55 @@ jobs:
             .claude-plugin/plugin.json \
             .claude-plugin/marketplace.json \
             .cursor-plugin/plugin.json \
-            .cursor-plugin/marketplace.json; do
-            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d['plugins'][0]['logo'])")
+            .cursor-plugin/marketplace.json \
+            .codex-plugin/plugin.json; do
+            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d.get('interface',{}).get('logo') or d['plugins'][0]['logo'])")
             if [ ! -f "$logo" ]; then
               echo "::error file=$f::logo path missing: $logo"
               exit 1
             fi
             echo "$f -> $logo"
           done
+
+      # Six client-specific config files now carry the MCP endpoint. They must
+      # never drift apart — a stale URL in one silently breaks that client only.
+      - name: Verify MCP endpoint is identical across all client configs
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, sys
+
+          EXPECTED = "https://api.princi.ai/functions/v1/princi"
+          # file -> (json path to the server object, url key)
+          TARGETS = {
+              ".mcp.json":                 (["mcpServers", "princi"],  "url"),
+              "cursor/mcp-config.json":    (["mcpServers", "princi"],  "url"),
+              ".cursor-plugin/plugin.json":(["mcpServers", "princi"],  "url"),
+              "codex/mcp.json":            (["mcp_servers", "princi"], "url"),
+              "mcp_config.json":           (["mcpServers", "princi"],  "serverUrl"),
+              "opencode/opencode.json":    (["mcp", "princi"],         "url"),
+          }
+
+          bad = False
+          for path, (keys, url_key) in TARGETS.items():
+              node = json.load(open(path))
+              for k in keys:
+                  node = node[k]
+              url = node[url_key]
+              if url != EXPECTED:
+                  print(f"::error file={path}::{url_key} is {url!r}, expected {EXPECTED!r}")
+                  bad = True
+              else:
+                  print(f"{path} -> {url}")
+
+          # Claude Desktop passes the endpoint as an mcp-remote argv, not a url field.
+          desktop = json.load(open("desktop/manifest.json"))
+          args = desktop["server"]["mcp_config"]["args"]
+          if EXPECTED not in args:
+              print(f"::error file=desktop/manifest.json::{EXPECTED} missing from mcp_config.args")
+              bad = True
+          else:
+              print(f"desktop/manifest.json -> {EXPECTED}")
+
+          sys.exit(1 if bad else 0)
+          PY
