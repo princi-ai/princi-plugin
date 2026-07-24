@@ -52,7 +52,6 @@ jobs:
             .cursor-plugin/plugin.json \
             .cursor-plugin/marketplace.json \
             .codex-plugin/plugin.json \
-            plugin.json \
             desktop/manifest.json; do
             v=$(python3 -c "import json,sys; d=json.load(open('$f')); print(d.get('version') or d['plugins'][0]['version'])")
             if [ "$v" != "$EXPECTED" ]; then
