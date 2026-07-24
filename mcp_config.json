@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "princi": {
+      "serverUrl": "https://api.princi.ai/functions/v1/princi"
+    }
+  }
+}
