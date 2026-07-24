@@ -1,0 +1,26 @@
+{
+  "name": "princi",
+  "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code.",
+  "version": "0.1.12",
+  "author": { "name": "Princi AI", "email": "support@princi.ai", "url": "https://princi.ai" },
+  "homepage": "https://princi.ai",
+  "repository": "https://github.com/princi-ai/princi-plugin",
+  "license": "MIT",
+  "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search", "google drive", "slack", "knowledge retrieval"],
+  "skills": "./skills/",
+  "mcpServers": "./codex/mcp.json",
+  "interface": {
+    "displayName": "Princi",
+    "shortDescription": "Search your email, Drive, Slack, and meetings from Codex",
+    "longDescription": "Princi searches your emails, Drive docs, Slack messages, and meeting notes so any Codex task starts grounded in the right background — instead of copy-pasting context by hand.",
+    "developerName": "Princi AI",
+    "category": "Productivity",
+    "websiteURL": "https://princi.ai",
+    "privacyPolicyURL": "https://princi.ai/privacy",
+    "logo": "./assets/logo.png",
+    "defaultPrompt": [
+      "What tasks do I have from today's team sync meeting?",
+      "What did we decide about this in recent meetings?"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "princi",
+  "version": "0.1.12",
+  "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code.",
+  "author": { "name": "Princi AI", "email": "support@princi.ai", "url": "https://princi.ai" }
+}

@@ -64,6 +64,43 @@ Auth uses OAuth auto-discovery when Cursor supports it. API-key fallback is avai
 
 ---
 
+## Setup: Codex (CLI / desktop app)
+
+**Option A — Install as a Codex plugin** (bundles the skills + MCP server):
+
+```
+codex plugin marketplace add princi-ai/princi-plugin
+```
+
+Then, inside Codex:
+
+```
+/plugin install princi@princi-ai
+/reload-plugins
+```
+
+Or browse with `/plugins`. Codex registers the Princi MCP server from [codex/mcp.json](codex/mcp.json) and the `/princi` skills from [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
+
+> Plugins are supported in the Codex CLI and desktop app. They are **not** available in ChatGPT Chat, the IDE extension, or mobile — use Option B there.
+
+**Option B — MCP server only** (no plugin):
+
+```
+codex mcp add princi --url https://api.princi.ai/functions/v1/princi
+codex mcp login princi
+```
+
+`codex mcp add` probes the server for OAuth metadata and starts the sign-in flow. Equivalent manual config in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.princi]
+url = "https://api.princi.ai/functions/v1/princi"
+```
+
+If your network requires a fixed OAuth callback port, add a top-level `mcp_oauth_callback_port = 5555` to the same file.
+
+---
+
 ## Setup: ChatGPT (Pro / Team / Enterprise)
 
 1. Open ChatGPT → Settings → Developer Mode
@@ -74,6 +111,66 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 
 ---
 
+## Setup: OpenCode
+
+Add Princi to your OpenCode config — `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "princi": {
+      "type": "remote",
+      "url": "https://api.princi.ai/functions/v1/princi",
+      "enabled": true
+    }
+  }
+}
+```
+
+Or copy [opencode/opencode.json](opencode/opencode.json).
+
+OpenCode detects the server's `401` response and starts the OAuth flow automatically the first time you invoke a Princi tool. To trigger it up front, run `opencode mcp auth princi` (and `opencode mcp logout princi` to sign out).
+
+**Skills.** OpenCode reads `SKILL.md` from `~/.claude/skills/` and `~/.agents/skills/` as well as its own `~/.config/opencode/skills/` — so if you already installed the Princi plugin in Claude Code, `/princi` works in OpenCode with no extra step. Otherwise, copy [skills/](skills/) into `~/.config/opencode/skills/`.
+
+OpenCode plugins cannot register MCP servers or skills, so there is no plugin bundle to install — the config above is the whole setup.
+
+---
+
+## Setup: Antigravity
+
+**Option A — MCP server only** (fastest):
+
+Type `/mcp` in the prompt panel to open the MCP manager, or edit the raw config directly — `~/.gemini/config/mcp_config.json` globally, or `.agents/mcp_config.json` for a single workspace:
+
+```json
+{
+  "mcpServers": {
+    "princi": {
+      "serverUrl": "https://api.princi.ai/functions/v1/princi"
+    }
+  }
+}
+```
+
+Antigravity reloads MCP config on save. The first Princi tool call opens an OAuth browser flow.
+
+> `serverUrl` is the current key for Streamable HTTP servers — the older `url` / `httpUrl` fields are deprecated.
+
+**Option B — Install as an Antigravity plugin** (bundles the skills + MCP server):
+
+```bash
+git clone https://github.com/princi-ai/princi-plugin
+agy plugin install ./princi-plugin
+```
+
+Or copy the repo into `~/.gemini/config/plugins/` (all workspaces) or `.agents/plugins/` (one workspace). The repo root doubles as an Antigravity plugin — [plugin.json](plugin.json), [mcp_config.json](mcp_config.json), and [skills/](skills/).
+
+Antigravity has no third-party plugin marketplace yet, so local install is the only path today.
+
+---
+
 ## Troubleshooting
 
 **`mcp__princi__search` not available:**
@@ -81,7 +178,8 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 - Restart your coding tool if the sign-in browser doesn't open.
 
 **Sign-in browser doesn't open:**
-- Confirm your coding tool supports OAuth-enabled HTTP MCP servers (Claude Desktop, Claude Code).
+- Confirm your coding tool supports OAuth-enabled HTTP MCP servers (Claude Desktop, Claude Code, Codex, Cursor, OpenCode, Antigravity).
+- In Codex, force the flow with `codex mcp login princi`; in OpenCode, `opencode mcp auth princi`.
 - Check your terminal/console for an authorization URL printed by `mcp-remote` and open it manually.
 
 **Token expired / 401 errors:**
@@ -132,4 +230,5 @@ Full policy: https://princi.ai/privacy
 ## Coming Soon
 
 - cursor.directory one-click install
-- Gemini and OpenCode support
+- Antigravity plugin marketplace listing (once Google ships third-party distribution)
+- Gemini CLI support

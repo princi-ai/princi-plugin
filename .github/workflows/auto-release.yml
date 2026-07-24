@@ -51,6 +51,8 @@ jobs:
             .claude-plugin/marketplace.json \
             .cursor-plugin/plugin.json \
             .cursor-plugin/marketplace.json \
+            .codex-plugin/plugin.json \
+            plugin.json \
             desktop/manifest.json; do
             v=$(python3 -c "import json,sys; d=json.load(open('$f')); print(d.get('version') or d['plugins'][0]['version'])")
             if [ "$v" != "$EXPECTED" ]; then
@@ -82,7 +84,9 @@ jobs:
           mkdir -p dist
           npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
-            .claude-plugin .cursor-plugin .mcp.json assets cursor desktop skills \
+            .claude-plugin .cursor-plugin .codex-plugin .agents \
+            .mcp.json mcp_config.json plugin.json \
+            assets cursor codex desktop opencode skills \
             README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
 
