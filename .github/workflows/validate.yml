@@ -83,3 +83,44 @@ jobs:
 
           sys.exit(1 if bad else 0)
           PY
+
+      # Guards the two schema mistakes caught in review on #34.
+      - name: Verify Codex manifest and marketplace schema
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, os, sys
+
+          bad = False
+
+          # Codex resolves the manifest's mcpServers pointer relative to the plugin
+          # root, and its loader derives serde(rename_all = "camelCase") — a
+          # snake_case `mcp_servers` wrapper silently registers a server by that
+          # name instead and drops the real one.
+          pointer = json.load(open(".codex-plugin/plugin.json"))["mcpServers"]
+          if not os.path.isfile(pointer):
+              print(f"::error file=.codex-plugin/plugin.json::mcpServers points at missing file: {pointer}")
+              bad = True
+          elif "mcpServers" not in json.load(open(pointer)):
+              print(f"::error file={pointer}::Codex requires the camelCase `mcpServers` wrapper key")
+              bad = True
+          else:
+              print(f".codex-plugin/plugin.json -> {pointer} (mcpServers wrapper ok)")
+
+          # MarketplacePluginAuthPolicy renames only these two; anything else
+          # fails the whole catalog parse with InvalidMarketplaceFile.
+          VALID_AUTH = {"ON_INSTALL", "ON_USE"}
+          VALID_INSTALL = {"INSTALLED_BY_DEFAULT", "AVAILABLE", "NOT_AVAILABLE"}
+          marketplace = ".agents/plugins/marketplace.json"
+          for entry in json.load(open(marketplace))["plugins"]:
+              policy = entry["policy"]
+              for key, valid in (("authentication", VALID_AUTH), ("installation", VALID_INSTALL)):
+                  value = policy[key]
+                  if value not in valid:
+                      print(f"::error file={marketplace}::{entry['name']}.policy.{key} is {value!r}, expected one of {sorted(valid)}")
+                      bad = True
+                  else:
+                      print(f"{marketplace} {entry['name']}.policy.{key} = {value}")
+
+          sys.exit(1 if bad else 0)
+          PY
