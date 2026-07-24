@@ -40,7 +40,7 @@ jobs:
             echo "$f -> $logo"
           done
 
-      # Six client-specific config files now carry the MCP endpoint. They must
+      # Five client-specific config files now carry the MCP endpoint. They must
       # never drift apart — a stale URL in one silently breaks that client only.
       - name: Verify MCP endpoint is identical across all client configs
         run: |
@@ -50,11 +50,12 @@ jobs:
 
           EXPECTED = "https://api.princi.ai/functions/v1/princi"
           # file -> (json path to the server object, url key)
+          # .mcp.json serves both Claude Code and Codex — Codex's plugin loader
+          # reads the same `mcpServers` wrapper and strips the `type` field.
           TARGETS = {
               ".mcp.json":                 (["mcpServers", "princi"],  "url"),
               "cursor/mcp-config.json":    (["mcpServers", "princi"],  "url"),
               ".cursor-plugin/plugin.json":(["mcpServers", "princi"],  "url"),
-              "codex/mcp.json":            (["mcp_servers", "princi"], "url"),
               "mcp_config.json":           (["mcpServers", "princi"],  "serverUrl"),
               "opencode/opencode.json":    (["mcp", "princi"],         "url"),
           }

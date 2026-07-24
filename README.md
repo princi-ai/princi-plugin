@@ -79,7 +79,7 @@ Then, inside Codex:
 /reload-plugins
 ```
 
-Or browse with `/plugins`. Codex registers the Princi MCP server from [codex/mcp.json](codex/mcp.json) and the `/princi` skills from [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
+Or browse with `/plugins`. Codex registers the Princi MCP server from [.mcp.json](.mcp.json) and the `/princi` skills from [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
 
 > Plugins are supported in the Codex CLI and desktop app. They are **not** available in ChatGPT Chat, the IDE extension, or mobile — use Option B there.
 

@@ -2,10 +2,10 @@
 
 ## 0.1.12 — 2026-07-24
 
-- **Codex support.** Add `.codex-plugin/plugin.json` + [`codex/mcp.json`](codex/mcp.json) and a Codex marketplace at `.agents/plugins/marketplace.json`, so `codex plugin marketplace add princi-ai/princi-plugin` → `/plugin install princi@princi-ai` installs the skills and MCP server together. MCP-only path documented as `codex mcp add princi --url …`
+- **Codex support.** Add `.codex-plugin/plugin.json` and a Codex marketplace at `.agents/plugins/marketplace.json`, so `codex plugin marketplace add princi-ai/princi-plugin` → `/plugin install princi@princi-ai` installs the skills and MCP server together. The manifest points at the existing [`.mcp.json`](.mcp.json) — Codex's plugin loader reads the same `mcpServers` wrapper as Claude Code and strips the `type` field, so no Codex-specific server file is needed. MCP-only path documented as `codex mcp add princi --url …`
 - **OpenCode support.** Add [`opencode/opencode.json`](opencode/opencode.json) — a `type: "remote"` MCP entry. OpenCode auto-starts OAuth on the server's `401`, and already discovers `SKILL.md` from `~/.claude/skills/`, so no skill duplication is needed
 - **Antigravity support.** The repo root now doubles as an Antigravity plugin — [`plugin.json`](plugin.json) + [`mcp_config.json`](mcp_config.json) (using the current `serverUrl` key) alongside the existing `skills/`, installable with `agy plugin install ./princi-plugin`. Antigravity has no third-party marketplace yet, so local install is the only path
-- CI: validate the Codex manifest's logo, and assert the MCP endpoint is byte-identical across all seven client configs so one client can't silently drift onto a stale URL
+- CI: validate the Codex manifest's logo, and assert the MCP endpoint is byte-identical across all six client configs so one client can't silently drift onto a stale URL
 - Bump version to 0.1.12 across all plugin manifests
 
 ## 0.1.11 — 2026-06-17

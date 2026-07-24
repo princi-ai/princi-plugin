@@ -86,7 +86,7 @@ jobs:
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
             .claude-plugin .cursor-plugin .codex-plugin .agents \
             .mcp.json mcp_config.json plugin.json \
-            assets cursor codex desktop opencode skills \
+            assets cursor desktop opencode skills \
             README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
 
