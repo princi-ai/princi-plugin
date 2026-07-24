@@ -8,7 +8,7 @@
   "license": "MIT",
   "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search", "google drive", "slack", "knowledge retrieval"],
   "skills": "./skills/",
-  "mcpServers": "./codex/mcp.json",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Princi",
     "shortDescription": "Search your email, Drive, Slack, and meetings from Codex",
