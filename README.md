@@ -83,22 +83,6 @@ Or browse with `/plugins`. Codex registers the Princi MCP server from [.mcp.json
 
 > Plugins are supported in the Codex CLI and desktop app. They are **not** available in ChatGPT Chat, the IDE extension, or mobile — use Option B there.
 
-**Option B — MCP server only** (no plugin):
-
-```
-codex mcp add princi --url https://api.princi.ai/functions/v1/princi
-codex mcp login princi
-```
-
-`codex mcp add` probes the server for OAuth metadata and starts the sign-in flow. Equivalent manual config in `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.princi]
-url = "https://api.princi.ai/functions/v1/princi"
-```
-
-If your network requires a fixed OAuth callback port, add a top-level `mcp_oauth_callback_port = 5555` to the same file.
-
 ---
 
 ## Setup: ChatGPT (Pro / Team / Enterprise)
@@ -113,7 +97,7 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 
 ## Setup: OpenCode
 
-Add Princi to your OpenCode config — `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root:
+**Add MCP server** Add Princi MCP to your OpenCode config — `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root:
 
 ```json
 {
@@ -132,15 +116,24 @@ Or copy [opencode/opencode.json](opencode/opencode.json).
 
 OpenCode detects the server's `401` response and starts the OAuth flow automatically the first time you invoke a Princi tool. To trigger it up front, run `opencode mcp auth princi` (and `opencode mcp logout princi` to sign out).
 
-**Skills.** OpenCode reads `SKILL.md` from `~/.claude/skills/` and `~/.agents/skills/` as well as its own `~/.config/opencode/skills/` — so if you already installed the Princi plugin in Claude Code, `/princi` works in OpenCode with no extra step. Otherwise, copy [skills/](skills/) into `~/.config/opencode/skills/`.
+**Skills.** Install the Princi skills into OpenCode's own skills directory — copy the [skills/](skills/) folders into `~/.config/opencode/skills/` so each skill lands at `~/.config/opencode/skills/<name>/SKILL.md`:
 
-OpenCode plugins cannot register MCP servers or skills, so there is no plugin bundle to install — the config above is the whole setup.
+```bash
+git clone https://github.com/princi-ai/princi-plugin
+cd princi-plugin
+mkdir -p ~/.config/opencode/skills
+cp -R skills/princi skills/princi-code-review skills/princi-update-pr-best-practices ~/.config/opencode/skills/
+```
+
+Then `/princi`, `/princi-code-review`, and `/princi-update-pr-best-practices` are available in OpenCode. (OpenCode can also discover `SKILL.md` from `~/.claude/skills/`, but only on builds after the late-Dec-2025 fix — installing into `~/.config/opencode/skills/` works on every version.)
+
+OpenCode plugins cannot register MCP servers or skills, so there is no plugin bundle to install — the MCP config above plus these skills are the whole setup.
 
 ---
 
 ## Setup: Antigravity
 
-**Option A — MCP server only** (fastest):
+**Add MCP server**:
 
 Type `/mcp` in the prompt panel to open the MCP manager, or edit the raw config directly — `~/.gemini/config/mcp_config.json` globally, or `.agents/mcp_config.json` for a single workspace:
 
@@ -158,7 +151,15 @@ Antigravity reloads MCP config on save. The first Princi tool call opens an OAut
 
 > `serverUrl` is the current key for Streamable HTTP servers — the older `url` / `httpUrl` fields are deprecated.
 
-**Option B — Install as an Antigravity plugin** (bundles the skills + MCP server):
+**Install as an Antigravity plugin** (bundles the skills + MCP server):
+
+Requires the Antigravity CLI. If `agy` isn't on your `PATH` yet, install it (the script drops the binary at `~/.local/bin/agy`):
+
+```bash
+curl -fsSL https://antigravity.google/cli/install.sh | bash   # macOS / Linux
+```
+
+Then install the plugin from a local clone:
 
 ```bash
 git clone https://github.com/princi-ai/princi-plugin
