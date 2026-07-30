@@ -30,11 +30,97 @@ jobs:
             .claude-plugin/plugin.json \
             .claude-plugin/marketplace.json \
             .cursor-plugin/plugin.json \
-            .cursor-plugin/marketplace.json; do
-            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d['plugins'][0]['logo'])")
+            .cursor-plugin/marketplace.json \
+            .codex-plugin/plugin.json; do
+            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d.get('interface',{}).get('logo') or d['plugins'][0]['logo'])")
             if [ ! -f "$logo" ]; then
               echo "::error file=$f::logo path missing: $logo"
               exit 1
             fi
             echo "$f -> $logo"
           done
+
+      # Five client-specific config files now carry the MCP endpoint. They must
+      # never drift apart — a stale URL in one silently breaks that client only.
+      - name: Verify MCP endpoint is identical across all client configs
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, sys
+
+          EXPECTED = "https://api.princi.ai/functions/v1/princi"
+          # file -> (json path to the server object, url key)
+          # .mcp.json serves both Claude Code and Codex — Codex's plugin loader
+          # reads the same `mcpServers` wrapper and strips the `type` field.
+          TARGETS = {
+              ".mcp.json":                 (["mcpServers", "princi"],  "url"),
+              "cursor/mcp-config.json":    (["mcpServers", "princi"],  "url"),
+              ".cursor-plugin/plugin.json":(["mcpServers", "princi"],  "url"),
+              "mcp_config.json":           (["mcpServers", "princi"],  "serverUrl"),
+              "opencode/opencode.json":    (["mcp", "princi"],         "url"),
+          }
+
+          bad = False
+          for path, (keys, url_key) in TARGETS.items():
+              node = json.load(open(path))
+              for k in keys:
+                  node = node[k]
+              url = node[url_key]
+              if url != EXPECTED:
+                  print(f"::error file={path}::{url_key} is {url!r}, expected {EXPECTED!r}")
+                  bad = True
+              else:
+                  print(f"{path} -> {url}")
+
+          # Claude Desktop passes the endpoint as an mcp-remote argv, not a url field.
+          desktop = json.load(open("desktop/manifest.json"))
+          args = desktop["server"]["mcp_config"]["args"]
+          if EXPECTED not in args:
+              print(f"::error file=desktop/manifest.json::{EXPECTED} missing from mcp_config.args")
+              bad = True
+          else:
+              print(f"desktop/manifest.json -> {EXPECTED}")
+
+          sys.exit(1 if bad else 0)
+          PY
+
+      # Guards the two schema mistakes caught in review on #34.
+      - name: Verify Codex manifest and marketplace schema
+        run: |
+          set -e
+          python3 - <<'PY'
+          import json, os, sys
+
+          bad = False
+
+          # Codex resolves the manifest's mcpServers pointer relative to the plugin
+          # root, and its loader derives serde(rename_all = "camelCase") — a
+          # snake_case `mcp_servers` wrapper silently registers a server by that
+          # name instead and drops the real one.
+          pointer = json.load(open(".codex-plugin/plugin.json"))["mcpServers"]
+          if not os.path.isfile(pointer):
+              print(f"::error file=.codex-plugin/plugin.json::mcpServers points at missing file: {pointer}")
+              bad = True
+          elif "mcpServers" not in json.load(open(pointer)):
+              print(f"::error file={pointer}::Codex requires the camelCase `mcpServers` wrapper key")
+              bad = True
+          else:
+              print(f".codex-plugin/plugin.json -> {pointer} (mcpServers wrapper ok)")
+
+          # MarketplacePluginAuthPolicy renames only these two; anything else
+          # fails the whole catalog parse with InvalidMarketplaceFile.
+          VALID_AUTH = {"ON_INSTALL", "ON_USE"}
+          VALID_INSTALL = {"INSTALLED_BY_DEFAULT", "AVAILABLE", "NOT_AVAILABLE"}
+          marketplace = ".agents/plugins/marketplace.json"
+          for entry in json.load(open(marketplace))["plugins"]:
+              policy = entry["policy"]
+              for key, valid in (("authentication", VALID_AUTH), ("installation", VALID_INSTALL)):
+                  value = policy[key]
+                  if value not in valid:
+                      print(f"::error file={marketplace}::{entry['name']}.policy.{key} is {value!r}, expected one of {sorted(valid)}")
+                      bad = True
+                  else:
+                      print(f"{marketplace} {entry['name']}.policy.{key} = {value}")
+
+          sys.exit(1 if bad else 0)
+          PY
