@@ -3,7 +3,7 @@
   "mcp": {
     "princi": {
       "type": "remote",
-      "url": "https://api.princi.ai/functions/v1/princi",
+      "url": "https://princi.ai/mcp",
       "enabled": true
     }
   }

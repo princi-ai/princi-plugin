@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.13 — 2026-08-10
+
+- Point all client MCP endpoints at `https://princi.ai/mcp` instead of `https://api.princi.ai/functions/v1/princi`. The public facade serves RFC 9728 discovery from the MCP host origin, so clients that re-discover OAuth metadata after the browser callback (Cursor Cloud Agents) no longer fail token exchange. `api.princi.ai` remains the upstream and keeps working for already-installed clients
+- Bump version to 0.1.13 across all plugin manifests
+
 ## 0.1.12 — 2026-07-24
 
 - **Codex support.** Add `.codex-plugin/plugin.json` and a Codex marketplace at `.agents/plugins/marketplace.json`, so `codex plugin marketplace add princi-ai/princi-plugin` → `/plugin install princi@princi-ai` installs the skills and MCP server together. The manifest points at the existing [`.mcp.json`](.mcp.json) — Codex's plugin loader reads the same `mcpServers` wrapper as Claude Code and strips the `type` field, so no Codex-specific server file is needed. MCP-only path documented as `codex mcp add princi --url …`

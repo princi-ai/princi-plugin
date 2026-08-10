@@ -55,7 +55,7 @@ Cursor registers the Princi MCP server and `/princi` skill automatically from [.
 **Option B — MCP server only** (no plugin):
 
 1. Open Cursor → Settings → MCP
-2. Add a new MCP server with URL: `https://api.princi.ai/functions/v1/princi`
+2. Add a new MCP server with URL: `https://princi.ai/mcp`
 3. Save and restart Cursor
 
 Or copy the config from [cursor/mcp-config.json](cursor/mcp-config.json) into your Cursor MCP settings.
@@ -88,7 +88,7 @@ Or browse with `/plugins`. Codex registers the Princi MCP server from [.mcp.json
 ## Setup: ChatGPT (Pro / Team / Enterprise)
 
 1. Open ChatGPT → Settings → Developer Mode
-2. Add MCP server URL: `https://api.princi.ai/functions/v1/princi`
+2. Add MCP server URL: `https://princi.ai/mcp`
 3. Princi's `search` and `fetch` tools are now available
 
 Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is available for older clients — contact Princi.
@@ -105,7 +105,7 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
   "mcp": {
     "princi": {
       "type": "remote",
-      "url": "https://api.princi.ai/functions/v1/princi",
+      "url": "https://princi.ai/mcp",
       "enabled": true
     }
   }
@@ -141,7 +141,7 @@ Type `/mcp` in the prompt panel to open the MCP manager, or edit the raw config 
 {
   "mcpServers": {
     "princi": {
-      "serverUrl": "https://api.princi.ai/functions/v1/princi"
+      "serverUrl": "https://princi.ai/mcp"
     }
   }
 }

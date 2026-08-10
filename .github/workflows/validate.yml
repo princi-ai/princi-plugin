@@ -48,7 +48,7 @@ jobs:
           python3 - <<'PY'
           import json, sys
 
-          EXPECTED = "https://api.princi.ai/functions/v1/princi"
+          EXPECTED = "https://princi.ai/mcp"
           # file -> (json path to the server object, url key)
           # .mcp.json serves both Claude Code and Codex — Codex's plugin loader
           # reads the same `mcpServers` wrapper and strips the `type` field.
