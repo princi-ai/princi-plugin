@@ -58,7 +58,18 @@ Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo 
 2. Add a new MCP server with URL: `https://princi.ai/mcp`
 3. Save and restart Cursor
 
-Or copy the config from [cursor/mcp-config.json](cursor/mcp-config.json) into your Cursor MCP settings.
+Or paste this into your Cursor MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "princi": {
+      "type": "http",
+      "url": "https://princi.ai/mcp"
+    }
+  }
+}
+```
 
 Auth uses OAuth auto-discovery when Cursor supports it. API-key fallback is available for older clients — contact Princi.
 
@@ -163,7 +174,6 @@ Cursor and Codex are both [compatible clients](https://agent-plugins.org/compati
 | `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
 | `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
 | `opencode/opencode.json` | OpenCode is not a compatible client and has no plugin format for MCP servers or skills |
-| `cursor/mcp-config.json` | Copy-paste snippet for MCP-only setup (Option B above) |
 
 The spec's portable surface is just skills and MCP servers. Marketplace catalogs, install policy, and signing are explicitly out of scope, so each stays in its platform's own file.
 

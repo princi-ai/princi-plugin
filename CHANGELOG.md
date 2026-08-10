@@ -9,6 +9,7 @@
 - **Claude Code stays on its own path.** It is not a compatible client, so `.claude-plugin/` and `.mcp.json` are unchanged and remain the source of truth for its install and release flow
 - **OpenCode stays supported** via [`opencode/opencode.json`](opencode/opencode.json). It is not on the compatible-clients list (that entry is OpenClaw, a different product) and has no plugin format that can register MCP servers or skills, so it keeps its own `type: "remote"` MCP config plus a manual skill copy
 - **Drop Antigravity support** — remove `mcp_config.json`. This also frees the root `plugin.json`, which Antigravity shared: it had deliberately carried only `name` and `description`, a constraint incompatible with the `$schema` the spec requires
+- Remove `cursor/mcp-config.json`; Cursor MCP-only setup is documented inline in the README
 - Point all client MCP endpoints at `https://princi.ai/mcp` instead of `https://api.princi.ai/functions/v1/princi`. The public facade serves RFC 9728 discovery from the MCP host origin, so clients that re-discover OAuth metadata after the browser callback (Cursor Cloud Agents) no longer fail token exchange. `api.princi.ai` remains the upstream and keeps working for already-installed clients
 - CI: validate `plugin.json` and `mcp.json` against the canonical published schemas (spec §10.1 makes those identifiers immutable), assert both declare the same spec version, and check every `skills/` child is discoverable
 - Bump version to 0.1.13 across all plugin manifests

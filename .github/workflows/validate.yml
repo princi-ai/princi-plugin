@@ -108,13 +108,11 @@ jobs:
           # file -> (json path to the server object, url key)
           # mcp.json is the portable Agent Plugins config, read by Cursor and
           # Codex. .mcp.json is Claude Code's, which does not implement the spec.
-          # cursor/mcp-config.json is the copy-paste snippet the README documents
-          # for MCP-only setup without the plugin. OpenCode is not a compatible
-          # client and nests its server under `mcp`, not `mcpServers`.
+          # OpenCode is not a compatible client and nests its server under `mcp`,
+          # not `mcpServers`.
           TARGETS = {
               "mcp.json":                  (["mcpServers", "princi"],  "url"),
               ".mcp.json":                 (["mcpServers", "princi"],  "url"),
-              "cursor/mcp-config.json":    (["mcpServers", "princi"],  "url"),
               "opencode/opencode.json":    (["mcp", "princi"],         "url"),
           }
 
