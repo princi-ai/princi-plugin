@@ -1,4 +1,19 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "princi",
-  "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code."
+  "version": "0.1.13",
+  "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code.",
+  "author": { "name": "Princi AI", "email": "support@princi.ai", "url": "https://princi.ai" },
+  "homepage": "https://princi.ai",
+  "repository": "https://github.com/princi-ai/princi-plugin",
+  "license": "MIT",
+  "keywords": ["personal context", "knowledge retrieval", "email search", "google drive", "slack", "meeting notes", "action items", "meeting context"],
+  "extensions": {
+    "ai.princi": {
+      "displayName": "Princi",
+      "logo": "./assets/logo.png",
+      "category": "productivity",
+      "privacyPolicyURL": "https://princi.ai/privacy"
+    }
+  }
 }

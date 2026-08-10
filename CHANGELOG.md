@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.13 — 2026-08-10
+
+- **Agent Plugins 1.0.0 conformance.** The repo root is now a portable [Agent Plugins](https://agent-plugins.org) package, so any spec-aware client can install Princi without a vendor-specific path. [`plugin.json`](plugin.json) becomes the portable manifest — it gains the required `$schema`, plus `version`, `author`, `homepage`, `repository`, `license`, and `keywords`. The manifest schema is closed, so presentation metadata (logo, display name, category) moves under an `ai.princi` reverse-domain key in `extensions`
+- Add [`mcp.json`](mcp.json) — the spec's fixed MCP location, declaring the Princi server as `streamable-http`. This is a separate file from Claude Code's `.mcp.json`, which keeps its own `http` type; the two are kept in sync by CI
+- `skills/` already matched the spec's discovery contract (immediate children holding a `SKILL.md`), so no skills moved
+- **Delete the Cursor and Codex plugin manifests.** Both are [compatible clients](https://agent-plugins.org/compatible-clients), so they load the portable root package directly — `.cursor-plugin/plugin.json` and the whole `.codex-plugin/` directory are gone. Each client's marketplace catalog stays (`.cursor-plugin/marketplace.json`, `.agents/plugins/marketplace.json`): distribution, install policy, and signing are explicitly outside the portable spec. Note that Codex's plugin browser loses the `interface` block's `longDescription` and `defaultPrompt`, which have no portable equivalent
+- **Claude Code stays on its own path.** It is not a compatible client, so `.claude-plugin/` and `.mcp.json` are unchanged and remain the source of truth for its install and release flow
+- **OpenCode stays supported** via [`opencode/opencode.json`](opencode/opencode.json). It is not on the compatible-clients list (that entry is OpenClaw, a different product) and has no plugin format that can register MCP servers or skills, so it keeps its own `type: "remote"` MCP config plus a manual skill copy
+- **Drop Antigravity support** — remove `mcp_config.json`. This also frees the root `plugin.json`, which Antigravity shared: it had deliberately carried only `name` and `description`, a constraint incompatible with the `$schema` the spec requires
+- Remove `cursor/mcp-config.json`; Cursor MCP-only setup is documented inline in the README
+- Point all client MCP endpoints at `https://princi.ai/mcp` instead of `https://api.princi.ai/functions/v1/princi`. The public facade serves RFC 9728 discovery from the MCP host origin, so clients that re-discover OAuth metadata after the browser callback (Cursor Cloud Agents) no longer fail token exchange. `api.princi.ai` remains the upstream and keeps working for already-installed clients
+- CI: validate `plugin.json` and `mcp.json` against the canonical published schemas (spec §10.1 makes those identifiers immutable), assert both declare the same spec version, and check every `skills/` child is discoverable
+- Bump version to 0.1.13 across all plugin manifests
+
 ## 0.1.12 — 2026-07-24
 
 - **Codex support.** Add `.codex-plugin/plugin.json` and a Codex marketplace at `.agents/plugins/marketplace.json`, so `codex plugin marketplace add princi-ai/princi-plugin` → `/plugin install princi@princi-ai` installs the skills and MCP server together. The manifest points at the existing [`.mcp.json`](.mcp.json) — Codex's plugin loader reads the same `mcpServers` wrapper as Claude Code and strips the `type` field, so no Codex-specific server file is needed. MCP-only path documented as `codex mcp add princi --url …`
