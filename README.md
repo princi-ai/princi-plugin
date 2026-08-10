@@ -50,7 +50,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 
 In Cursor, run `/add-plugin princi` — or browse [cursor.com/marketplace](https://cursor.com/marketplace) and install Princi from the listing.
 
-Cursor registers the Princi MCP server and `/princi` skill automatically from [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
+Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/) — and registers the Princi MCP server and `/princi` skills automatically. The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
 
 **Option B — MCP server only** (no plugin):
 
@@ -79,7 +79,7 @@ Then, inside Codex:
 /reload-plugins
 ```
 
-Or browse with `/plugins`. Codex registers the Princi MCP server from [.mcp.json](.mcp.json) and the `/princi` skills from [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
+Or browse with `/plugins`. Codex reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
 
 > Plugins are supported in the Codex CLI and desktop app. They are **not** available in ChatGPT Chat, the IDE extension, or mobile — use Option B there.
 
@@ -97,7 +97,9 @@ Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is ava
 
 ## Setup: OpenCode
 
-**Add MCP server** Add Princi MCP to your OpenCode config — `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root:
+OpenCode is not an [Agent Plugins client](https://agent-plugins.org/compatible-clients), so it needs its own MCP config and a manual skill copy.
+
+**Add MCP server.** Add Princi MCP to your OpenCode config — `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root:
 
 ```json
 {
@@ -131,44 +133,43 @@ OpenCode plugins cannot register MCP servers or skills, so there is no plugin bu
 
 ---
 
-## Setup: Antigravity
+## Setup: any Agent Plugins client
 
-**Add MCP server**:
-
-Type `/mcp` in the prompt panel to open the MCP manager, or edit the raw config directly — `~/.gemini/config/mcp_config.json` globally, or `.agents/mcp_config.json` for a single workspace:
-
-```json
-{
-  "mcpServers": {
-    "princi": {
-      "serverUrl": "https://princi.ai/mcp"
-    }
-  }
-}
-```
-
-Antigravity reloads MCP config on save. The first Princi tool call opens an OAuth browser flow.
-
-> `serverUrl` is the current key for Streamable HTTP servers — the older `url` / `httpUrl` fields are deprecated.
-
-**Install as an Antigravity plugin** (bundles the skills + MCP server):
-
-Requires the Antigravity CLI. If `agy` isn't on your `PATH` yet, install it (the script drops the binary at `~/.local/bin/agy`):
-
-```bash
-curl -fsSL https://antigravity.google/cli/install.sh | bash   # macOS / Linux
-```
-
-Then install the plugin from a local clone:
+The repo root is a conformant [Agent Plugins 1.0.0](https://agent-plugins.org) package, so any [compatible client](https://agent-plugins.org/compatible-clients) — VS Code, Cursor, GitHub Copilot, Codex, Kiro, Hermes Agent, OpenClaw — can install Princi without a vendor-specific path:
 
 ```bash
 git clone https://github.com/princi-ai/princi-plugin
-agy plugin install ./princi-plugin
 ```
 
-Or copy the repo into `~/.gemini/config/plugins/` (all workspaces) or `.agents/plugins/` (one workspace). The repo root doubles as an Antigravity plugin — [plugin.json](plugin.json), [mcp_config.json](mcp_config.json), and [skills/](skills/).
+Then point your client at the clone. It reads three fixed locations from the plugin root — no configuration, no discovery indirection:
 
-Antigravity has no third-party plugin marketplace yet, so local install is the only path today.
+| Location | Contents |
+| --- | --- |
+| [`plugin.json`](plugin.json) | Portable manifest — identity, version, and metadata |
+| [`mcp.json`](mcp.json) | The Princi MCP server, as a `streamable-http` entry |
+| [`skills/`](skills/) | `princi`, `princi-code-review`, `princi-update-pr-best-practices` |
+
+The first Princi tool call opens an OAuth browser flow to sign in.
+
+### What's left outside the portable package
+
+Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load the root package directly and no longer need a plugin manifest of their own — those were deleted. What remains is only what the spec deliberately leaves out:
+
+| File | Why it can't be portable |
+| --- | --- |
+| `.claude-plugin/plugin.json`, `.mcp.json` | Claude Code is not a compatible client; it still requires its own manifest and `.mcp.json` |
+| `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
+| `.cursor-plugin/marketplace.json` | Cursor's marketplace catalog |
+| `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
+| `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
+| `opencode/opencode.json` | OpenCode is not a compatible client and has no plugin format for MCP servers or skills |
+| `cursor/mcp-config.json` | Copy-paste snippet for MCP-only setup (Option B above) |
+
+The spec's portable surface is just skills and MCP servers. Marketplace catalogs, install policy, and signing are explicitly out of scope, so each stays in its platform's own file.
+
+One caveat on `extensions`: Princi's presentation metadata (logo, display name, category) sits under an `ai.princi` namespace in `plugin.json` because the manifest schema is closed and non-portable fields have nowhere else to go. No client implements that namespace, so it is documentation, not behavior — the spec is explicit that an extension "is not a way for a plugin author to make up fields that existing clients will automatically understand."
+
+CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint.
 
 ---
 
@@ -179,7 +180,7 @@ Antigravity has no third-party plugin marketplace yet, so local install is the o
 - Restart your coding tool if the sign-in browser doesn't open.
 
 **Sign-in browser doesn't open:**
-- Confirm your coding tool supports OAuth-enabled HTTP MCP servers (Claude Desktop, Claude Code, Codex, Cursor, OpenCode, Antigravity).
+- Confirm your coding tool supports OAuth-enabled HTTP MCP servers (Claude Desktop, Claude Code, Codex, Cursor, OpenCode).
 - In Codex, force the flow with `codex mcp login princi`; in OpenCode, `opencode mcp auth princi`.
 - Check your terminal/console for an authorization URL printed by `mcp-remote` and open it manually.
 
@@ -231,5 +232,4 @@ Full policy: https://princi.ai/privacy
 ## Coming Soon
 
 - cursor.directory one-click install
-- Antigravity plugin marketplace listing (once Google ships third-party distribution)
-- Gemini CLI support
+- Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` and `.mcp.json` go away

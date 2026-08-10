@@ -1,8 +1,10 @@
 name: Auto Release
 
-# When .claude-plugin/plugin.json changes on main and its version has no
-# matching v<version> tag yet, this workflow tags the commit, builds the
-# .mcpb + tarball artifacts, and publishes a GitHub Release.
+# When a versioned manifest changes on main and .claude-plugin/plugin.json's
+# version has no matching v<version> tag yet, this workflow tags the commit,
+# builds the .mcpb + tarball artifacts, and publishes a GitHub Release.
+# .claude-plugin/plugin.json stays the version source of truth; the root
+# Agent Plugins manifest is a trigger too so a spec-side bump still releases.
 #
 # Note: we build the release inline (rather than just pushing a tag and
 # letting release.yml fire) because tags pushed via GITHUB_TOKEN do not
@@ -13,6 +15,7 @@ on:
     branches: [main]
     paths:
       - '.claude-plugin/plugin.json'
+      - 'plugin.json'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +30,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from plugin.json
+      - name: Read version from .claude-plugin/plugin.json
         id: version
         run: |
           set -e
@@ -48,10 +51,9 @@ jobs:
           set -e
           mismatch=0
           for f in \
+            plugin.json \
             .claude-plugin/marketplace.json \
-            .cursor-plugin/plugin.json \
             .cursor-plugin/marketplace.json \
-            .codex-plugin/plugin.json \
             desktop/manifest.json; do
             v=$(python3 -c "import json,sys; d=json.load(open('$f')); print(d.get('version') or d['plugins'][0]['version'])")
             if [ "$v" != "$EXPECTED" ]; then
@@ -83,8 +85,8 @@ jobs:
           mkdir -p dist
           npx --yes @anthropic-ai/mcpb pack desktop "dist/${NAME}.mcpb"
           tar --exclude='./dist' --exclude='./.git' -czf "dist/${NAME}.tar.gz" \
-            .claude-plugin .cursor-plugin .codex-plugin .agents \
-            .mcp.json mcp_config.json plugin.json \
+            .claude-plugin .cursor-plugin .agents \
+            plugin.json mcp.json .mcp.json \
             assets cursor desktop opencode skills \
             README.md CHANGELOG.md LICENSE SECURITY.md
           (cd dist && sha256sum "${NAME}.mcpb" "${NAME}.tar.gz" > "${NAME}-checksums.txt")
