@@ -7,5 +7,11 @@
   "repository": "https://github.com/princi-ai/princi-plugin",
   "homepage": "https://princi.ai",
   "license": "MIT",
-  "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search", "google drive", "slack", "knowledge retrieval"]
+  "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search", "google drive", "slack", "knowledge retrieval"],
+  "mcpServers": {
+    "princi": {
+      "type": "http",
+      "url": "https://princi.ai/mcp"
+    }
+  }
 }

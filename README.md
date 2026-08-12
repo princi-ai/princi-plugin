@@ -170,7 +170,7 @@ Cursor and Codex are both [compatible clients](https://agent-plugins.org/compati
 
 | File | Why it can't be portable |
 | --- | --- |
-| `.claude-plugin/plugin.json`, `.mcp.json` | Claude Code is not a compatible client; it still requires its own manifest and `.mcp.json` |
+| `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The Princi MCP server is declared inline in it — Claude Code reads either a root `.mcp.json` or an inline `mcpServers` object, and inline keeps the server in one file |
 | `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
 | `.cursor-plugin/marketplace.json` | Cursor's marketplace catalog |
 | `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
@@ -275,4 +275,4 @@ Full policy: https://princi.ai/privacy
 ## Coming Soon
 
 - cursor.directory one-click install
-- Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` and `.mcp.json` go away
+- Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` go away

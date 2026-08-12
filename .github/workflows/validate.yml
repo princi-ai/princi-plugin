@@ -121,13 +121,16 @@ jobs:
           EXPECTED = "https://princi.ai/mcp"
           # file -> (json path to the server object, url key)
           # mcp.json is the portable Agent Plugins config, read by Cursor and
-          # Codex. .mcp.json is Claude Code's, which does not implement the spec.
+          # Codex. Claude Code does not implement the spec and needs its own
+          # copy, declared inline in its manifest rather than in a root
+          # .mcp.json — same loader, one less file, and no project-scoped
+          # duplicate server for anyone with this repo open.
           # OpenCode is not a compatible client and nests its server under `mcp`,
           # not `mcpServers`.
           TARGETS = {
-              "mcp.json":                  (["mcpServers", "princi"],  "url"),
-              ".mcp.json":                 (["mcpServers", "princi"],  "url"),
-              "opencode/opencode.json":    (["mcp", "princi"],         "url"),
+              "mcp.json":                    (["mcpServers", "princi"],  "url"),
+              ".claude-plugin/plugin.json":  (["mcpServers", "princi"],  "url"),
+              "opencode/opencode.json":      (["mcp", "princi"],         "url"),
           }
 
           bad = False
