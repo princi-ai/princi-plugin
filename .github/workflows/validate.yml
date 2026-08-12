@@ -15,28 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Validate JSON files
-        run: |
-          set -e
-          for f in $(find . -name "*.json" -not -path "./node_modules/*"); do
-            echo "Validating $f"
-            python3 -m json.tool "$f" > /dev/null
-          done
-
-      - name: Verify plugin logos exist
-        run: |
-          set -e
-          for f in \
-            .claude-plugin/plugin.json \
-            .claude-plugin/marketplace.json \
-            .cursor-plugin/marketplace.json; do
-            logo=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('logo') or d['plugins'][0]['logo'])")
-            if [ ! -f "$logo" ]; then
-              echo "::error file=$f::logo path missing: $logo"
-              exit 1
-            fi
-            echo "$f -> $logo"
-          done
 
       # setup-python rather than the runner's system interpreter: hosted images
       # mark that one externally-managed (PEP 668), so `pip install` fails there.
@@ -44,127 +22,20 @@ jobs:
         with:
           python-version: '3.12'
 
-      # The repo root is an Agent Plugins 1.0.0 package: plugin.json + mcp.json +
-      # skills/. Validate both files against the canonical published schemas —
-      # spec §10.1 forbids reassigning a published schema identifier to different
-      # contents, so fetching by URL can never change meaning underneath us.
-      - name: Validate Agent Plugins manifest and MCP config
+      - name: Install check dependencies
         run: |
           set -e
           python3 -m pip install --quiet --disable-pip-version-check jsonschema
-          python3 - <<'PY'
-          import json, os, sys, urllib.request
-          from jsonschema import Draft202012Validator
+          # Pinned deliberately, the same way every action above is pinned to a
+          # SHA. Bump it on purpose: a newer CLI can add validation rules, and
+          # the community-marketplace review pipeline always runs the current
+          # one, so a stale pin here can pass while a submission fails.
+          npm install -g @anthropic-ai/claude-code@2.1.220
+          claude --version
 
-          SPEC = "1.0.0"
-          bad = False
-
-          # Both files must declare the same spec version (§10.1): a plugin.json /
-          # mcp.json version mismatch invalidates the MCP component on its own.
-          for path, kind in (("plugin.json", "plugin"), ("mcp.json", "mcp")):
-              doc = json.load(open(path))
-              expected = f"https://agent-plugins.org/schemas/{SPEC}/{kind}.schema.json"
-              declared = doc.get("$schema")
-              if declared != expected:
-                  print(f"::error file={path}::$schema is {declared!r}, expected {expected!r}")
-                  bad = True
-                  continue
-              with urllib.request.urlopen(declared, timeout=30) as r:
-                  schema = json.load(r)
-              errors = sorted(Draft202012Validator(schema).iter_errors(doc), key=lambda e: list(e.absolute_path))
-              for e in errors:
-                  loc = "/".join(str(p) for p in e.absolute_path) or "<root>"
-                  print(f"::error file={path}::{loc}: {e.message}")
-                  bad = True
-              if not errors:
-                  print(f"{path} -> conforms to Agent Plugins {SPEC} {kind} schema")
-
-          # §6.1/§7.1: a skill is an immediate child of skills/ holding a SKILL.md
-          # regular file. Clients never recurse deeper, so a nested skill would be
-          # silently invisible rather than reported.
-          for entry in sorted(os.listdir("skills")):
-              d = os.path.join("skills", entry)
-              if not os.path.isdir(d):
-                  print(f"::error file=skills/{entry}::not a directory; skills/ holds only skill directories")
-                  bad = True
-              elif not os.path.isfile(os.path.join(d, "SKILL.md")):
-                  print(f"::error file=skills/{entry}::no SKILL.md — this skill will not be discovered")
-                  bad = True
-              else:
-                  print(f"skills/{entry}/SKILL.md ok")
-
-          sys.exit(1 if bad else 0)
-          PY
-
-      # Every client config carrying the MCP endpoint must agree — a stale URL in
-      # one of them silently breaks that client only.
-      - name: Verify MCP endpoint is identical across all client configs
-        run: |
-          set -e
-          python3 - <<'PY'
-          import json, sys
-
-          EXPECTED = "https://princi.ai/mcp"
-          # file -> (json path to the server object, url key)
-          # mcp.json is the portable Agent Plugins config, read by Cursor and
-          # Codex. .mcp.json is Claude Code's, which does not implement the spec.
-          # OpenCode is not a compatible client and nests its server under `mcp`,
-          # not `mcpServers`.
-          TARGETS = {
-              "mcp.json":                  (["mcpServers", "princi"],  "url"),
-              ".mcp.json":                 (["mcpServers", "princi"],  "url"),
-              "opencode/opencode.json":    (["mcp", "princi"],         "url"),
-          }
-
-          bad = False
-          for path, (keys, url_key) in TARGETS.items():
-              node = json.load(open(path))
-              for k in keys:
-                  node = node[k]
-              url = node[url_key]
-              if url != EXPECTED:
-                  print(f"::error file={path}::{url_key} is {url!r}, expected {EXPECTED!r}")
-                  bad = True
-              else:
-                  print(f"{path} -> {url}")
-
-          # Claude Desktop passes the endpoint as an mcp-remote argv, not a url field.
-          desktop = json.load(open("desktop/manifest.json"))
-          args = desktop["server"]["mcp_config"]["args"]
-          if EXPECTED not in args:
-              print(f"::error file=desktop/manifest.json::{EXPECTED} missing from mcp_config.args")
-              bad = True
-          else:
-              print(f"desktop/manifest.json -> {EXPECTED}")
-
-          sys.exit(1 if bad else 0)
-          PY
-
-      # Codex's plugin manifest is gone — it loads the portable root package now —
-      # but its marketplace catalog is still client-owned, and distribution sits
-      # outside the portable spec. Guards the schema mistake caught in review on #34.
-      - name: Verify Codex marketplace schema
-        run: |
-          set -e
-          python3 - <<'PY'
-          import json, sys
-
-          bad = False
-
-          # MarketplacePluginAuthPolicy renames only these two; anything else
-          # fails the whole catalog parse with InvalidMarketplaceFile.
-          VALID_AUTH = {"ON_INSTALL", "ON_USE"}
-          VALID_INSTALL = {"INSTALLED_BY_DEFAULT", "AVAILABLE", "NOT_AVAILABLE"}
-          marketplace = ".agents/plugins/marketplace.json"
-          for entry in json.load(open(marketplace))["plugins"]:
-              policy = entry["policy"]
-              for key, valid in (("authentication", VALID_AUTH), ("installation", VALID_INSTALL)):
-                  value = policy[key]
-                  if value not in valid:
-                      print(f"::error file={marketplace}::{entry['name']}.policy.{key} is {value!r}, expected one of {sorted(valid)}")
-                      bad = True
-                  else:
-                      print(f"{marketplace} {entry['name']}.policy.{key} = {value}")
-
-          sys.exit(1 if bad else 0)
-          PY
+      # Same script you can run locally with ./scripts/validate.sh.
+      # STRICT_DEPS=1 turns "dependency missing, check skipped" into a failure,
+      # so a broken install step above cannot let this job pass having run
+      # nothing.
+      - name: Validate
+        run: STRICT_DEPS=1 ./scripts/validate.sh

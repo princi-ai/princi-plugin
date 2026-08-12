@@ -1,6 +1,6 @@
 {
   "name": "princi-plugin",
-  "id": "princi",
+  "description": "The official Princi marketplace — install Princi to give Claude Code your personal context from Gmail, Drive, Slack, and Calendar.",
   "owner": { "name": "Princi AI" },
   "plugins": [
     {
@@ -8,10 +8,9 @@
       "displayName": "Princi",
       "source": "./",
       "description": "Context-as-a-service for AI tools. Search your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background — so you start faster and miss nothing.",
-      "version": "0.1.13",
+      "version": "0.1.14",
       "author": { "name": "Princi AI" },
-      "logo": "assets/logo.png",
-      "keywords": ["meeting notes", "action items", "meeting context", "personal context", "email search"],
+      "keywords": ["personal context", "knowledge retrieval", "email search", "google drive", "slack", "meeting notes", "action items", "meeting context"],
       "category": "productivity"
     }
   ]

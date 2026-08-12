@@ -2,36 +2,27 @@
 
 Connect Princi — your personal context engine — to any AI coding tool.
 
-Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
+Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi:princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
 
 **Examples:**
-- `/princi what tasks do I have from today's team sync meeting?`
-- `/princi what did we discuss about productionizing Princi in recent meetings?`
-- `/princi create a plan to update the PRD based on our latest discussions`
+- `/princi:princi what tasks do I have from today's team sync meeting?`
+- `/princi:princi what did we discuss about productionizing Princi in recent meetings?`
+- `/princi:princi create a plan to update the PRD based on our latest discussions`
+
+> Plugin-installed skills are namespaced: `/princi:princi`, `/princi:princi-code-review`, `/princi:princi-update-pr-best-practices`. Copying `skills/` in by hand (the OpenCode path) drops the prefix.
 
 ---
 
 ## Setup: Claude Code (CLI / Co-work / IDE extension)
 
-**1. Add the Princi marketplace** (one-time, in `~/.claude/settings.json`):
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "princi-ai": {
-      "source": { "source": "github", "repo": "princi-ai/princi-plugin" }
-    }
-  }
-}
-```
-
-**2. Install the plugin** in Claude Code:
+Run both inside Claude Code:
 
 ```
-/plugins install princi@princi-ai
+/plugin marketplace add princi-ai/princi-plugin
+/plugin install princi@princi-plugin
 ```
 
-**3. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi` skill is ready — no API key step.
+The first Princi tool call opens a browser to sign in. After that, `/princi:princi` is ready — no API key step.
 
 ---
 
@@ -50,7 +41,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 
 In Cursor, run `/add-plugin princi` — or browse [cursor.com/marketplace](https://cursor.com/marketplace) and install Princi from the listing.
 
-Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/) — and registers the Princi MCP server and `/princi` skills automatically. The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
+Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/) — and registers the Princi MCP server and the Princi skills automatically. The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
 
 **Option B — MCP server only** (no plugin):
 
@@ -164,13 +155,12 @@ The first Princi tool call opens an OAuth browser flow to sign in.
 
 ### What's left outside the portable package
 
-Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load the root package directly and no longer need a plugin manifest of their own — those were deleted. What remains is only what the spec deliberately leaves out:
+Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package. Cursor can publish from that package alone. Codex still needs [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json) for `codex plugin marketplace add` / install. What remains outside the portable package is only what the spec deliberately leaves out:
 
 | File | Why it can't be portable |
 | --- | --- |
-| `.claude-plugin/plugin.json`, `.mcp.json` | Claude Code is not a compatible client; it still requires its own manifest and `.mcp.json` |
+| `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The MCP server is declared inline in it |
 | `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
-| `.cursor-plugin/marketplace.json` | Cursor's marketplace catalog |
 | `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
 | `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
 | `opencode/opencode.json` | OpenCode is not a compatible client and has no plugin format for MCP servers or skills |
@@ -179,7 +169,7 @@ The spec's portable surface is just skills and MCP servers. Marketplace catalogs
 
 One caveat on `extensions`: Princi's presentation metadata (logo, display name, category) sits under an `ai.princi` namespace in `plugin.json` because the manifest schema is closed and non-portable fields have nowhere else to go. No client implements that namespace, so it is documentation, not behavior — the spec is explicit that an extension "is not a way for a plugin author to make up fields that existing clients will automatically understand."
 
-CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint.
+CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint. Run the same checks before pushing with `./scripts/validate.sh` — it skips any check whose dependency is missing locally, and CI runs it with `STRICT_DEPS=1` so a skip there is a failure.
 
 ---
 
@@ -197,7 +187,7 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 **Token expired / 401 errors:**
 - Sign out by clearing the local `mcp-remote` token cache at `~/.mcp-auth/` and re-invoke a Princi tool to trigger a fresh sign-in.
 
-**0 results from `/princi`:**
+**0 results from `/princi:princi`:**
 - Try a broader or rephrased query
 - Ensure your Google/Slack accounts are connected in Princi
 
@@ -206,8 +196,10 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 ## Updating
 
 ```
-/plugins update princi@princi-ai
+/plugin update princi@princi-plugin
 ```
+
+In Codex, the id is `princi@princi-ai`.
 
 ---
 
@@ -218,6 +210,19 @@ Each release ships a `princi-<version>-checksums.txt` file with SHA256 hashes fo
 ```bash
 sha256sum -c princi-v0.1.0-checksums.txt
 ```
+
+---
+
+## What the plugin can access
+
+Installing this plugin grants **identity only** — the MCP server requests `openid`, `profile`, and `email`. No Gmail, Drive, Slack, or Calendar scope. Verify against the server's public metadata:
+
+```bash
+curl -s https://princi.ai/.well-known/oauth-protected-resource
+# "scopes_supported": ["openid", "profile", "email"]
+```
+
+Sources are connected separately in the Princi app at [princi.ai](https://princi.ai), under their own consent screen. Those grants belong to your account, not this plugin, so uninstalling does not disconnect them — revoke them in the app.
 
 ---
 
@@ -236,10 +241,3 @@ sha256sum -c princi-v0.1.0-checksums.txt
 **Contact.** Reach us at `support@princi.ai` for any privacy questions or data deletion requests.
 
 Full policy: https://princi.ai/privacy
-
----
-
-## Coming Soon
-
-- cursor.directory one-click install
-- Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` and `.mcp.json` go away

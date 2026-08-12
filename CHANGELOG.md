@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.14 — 2026-08-11
+
+- **Delete `.mcp.json`; declare the MCP server inline in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).** Claude Code reads either, so the separate file was never required. The server key stays `princi`, so the runtime is unchanged: tools remain `mcp__plugin_princi_princi__search` / `__fetch`. This also removes the project-scoped duplicate server that anyone with this repo open in Claude Code was getting
+- **Clean `claude plugin validate --strict`.** Dropped `id` and `logo` from the `.claude-plugin/` manifests — Claude Code ignores both — and added the missing marketplace `description`. The logo is unaffected where it renders
+- Unify `keywords` across all four manifests to the list in [`plugin.json`](plugin.json). They had drifted into three different lists, so each store advertised Princi differently — the Claude Desktop `.mcpb` in particular carried an unrelated set
+- CI: the logo check and MCP endpoint parity check follow the moved fields; release workflows drop the deleted file from the tarball
+- Bump version to 0.1.14 across all plugin manifests
+
 ## 0.1.13 — 2026-08-10
 
 - **Agent Plugins 1.0.0 conformance.** The repo root is now a portable [Agent Plugins](https://agent-plugins.org) package, so any spec-aware client can install Princi without a vendor-specific path. [`plugin.json`](plugin.json) becomes the portable manifest — it gains the required `$schema`, plus `version`, `author`, `homepage`, `repository`, `license`, and `keywords`. The manifest schema is closed, so presentation metadata (logo, display name, category) moves under an `ai.princi` reverse-domain key in `extensions`
