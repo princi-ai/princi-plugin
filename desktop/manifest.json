@@ -15,7 +15,7 @@
     "url": "https://github.com/princi-ai/princi-plugin"
   },
   "license": "MIT",
-  "keywords": ["princi", "context", "gmail", "drive", "slack", "calendar"],
+  "keywords": ["personal context", "knowledge retrieval", "email search", "google drive", "slack", "meeting notes", "action items", "meeting context"],
   "privacy_policies": ["https://princi.ai/privacy"],
   "server": {
     "type": "node",

@@ -174,7 +174,42 @@ sys.exit(1 if bad else 0)
 PY
 then pass "all configs agree"; else fail "MCP endpoint drift"; fi
 
-# --------------------------------------------------------- 5. Codex marketplace
+# -------------------------------------------------------------- 5. Keywords
+
+# Four manifests advertise keywords to four different stores. They drifted once
+# (different order in one, a truncated 5-item subset in another, an unrelated
+# list in the .mcpb), which is invisible until you compare listings by hand.
+# plugin.json is the source of truth.
+header "Keywords identical across manifests"
+if python3 - <<'PY'
+import json, sys
+
+CANON_FILE = "plugin.json"
+canon = json.load(open(CANON_FILE))["keywords"]
+
+# file -> callable pulling the keywords list out of the parsed manifest
+TARGETS = {
+    "desktop/manifest.json":           lambda d: d["keywords"],
+    ".claude-plugin/plugin.json":      lambda d: d["keywords"],
+    ".claude-plugin/marketplace.json": lambda d: d["plugins"][0]["keywords"],
+}
+
+bad = False
+for path, extract in TARGETS.items():
+    got = extract(json.load(open(path)))
+    if got != canon:
+        print(f"::error file={path}::keywords differ from {CANON_FILE}")
+        print(f"   expected: {json.dumps(canon)}")
+        print(f"   got:      {json.dumps(got)}")
+        bad = True
+    else:
+        print(f"   {path} -> matches {CANON_FILE}")
+
+sys.exit(1 if bad else 0)
+PY
+then pass "all manifests agree"; else fail "keyword drift"; fi
+
+# --------------------------------------------------------- 6. Codex marketplace
 
 # Codex's plugin manifest is gone — it loads the portable root package now — but
 # its marketplace catalog is still client-owned, and distribution sits outside
@@ -204,7 +239,7 @@ sys.exit(1 if bad else 0)
 PY
 then pass "policy enums valid"; else fail "Codex marketplace schema"; fi
 
-# ------------------------------------------------ 6. claude plugin validate
+# ------------------------------------------------ 7. claude plugin validate
 
 # The same validator the community-marketplace review pipeline runs on every
 # submission. Needs no authentication.
