@@ -23,33 +23,22 @@ jobs:
             python3 -m json.tool "$f" > /dev/null
           done
 
-      # Only the manifests that actually render a logo. The `.claude-plugin/`
-      # pair used to carry one too, but Claude Code ignores unrecognized fields
-      # and `claude plugin validate --strict` fails on them, so the field is gone
-      # from there — Cursor's tile and the portable package are what's left.
-      - name: Verify plugin logos exist
+      # Logo lives under extensions["ai.princi"] in the portable Agent Plugins
+      # manifest. Claude Code rejects an unrecognized top-level logo field, so
+      # it is not duplicated into .claude-plugin/.
+      - name: Verify plugin logo exists
         run: |
           set -e
           python3 - <<'PY'
           import json, os, sys
 
-          # file -> callable extracting the logo path from the parsed manifest
-          TARGETS = {
-              ".cursor-plugin/marketplace.json": lambda d: d["plugins"][0]["logo"],
-              "plugin.json":                     lambda d: d["extensions"]["ai.princi"]["logo"],
-          }
-
-          bad = False
-          for path, extract in TARGETS.items():
-              logo = extract(json.load(open(path)))
-              # The portable manifest writes it relative-prefixed ("./assets/…").
-              if not os.path.isfile(logo):
-                  print(f"::error file={path}::logo path missing: {logo}")
-                  bad = True
-              else:
-                  print(f"{path} -> {logo}")
-
-          sys.exit(1 if bad else 0)
+          path = "plugin.json"
+          logo = json.load(open(path))["extensions"]["ai.princi"]["logo"]
+          # Relative-prefixed ("./assets/…") still resolves as a normal path.
+          if not os.path.isfile(logo):
+              print(f"::error file={path}::logo path missing: {logo}")
+              sys.exit(1)
+          print(f"{path} -> {logo}")
           PY
 
       # setup-python rather than the runner's system interpreter: hosted images

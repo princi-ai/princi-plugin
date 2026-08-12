@@ -166,13 +166,12 @@ The first Princi tool call opens an OAuth browser flow to sign in.
 
 ### What's left outside the portable package
 
-Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load the root package directly and no longer need a plugin manifest of their own — those were deleted. What remains is only what the spec deliberately leaves out:
+Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package and no longer need a vendor-specific plugin manifest (`.cursor-plugin/plugin.json`, `.codex-plugin/`). Cursor can publish from that root package alone. Codex still needs a marketplace catalog for `codex plugin marketplace add` / install. What remains outside the portable package is only what the spec deliberately leaves out:
 
 | File | Why it can't be portable |
 | --- | --- |
 | `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The Princi MCP server is declared inline in it — Claude Code reads either a root `.mcp.json` or an inline `mcpServers` object, and inline keeps the server in one file |
 | `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
-| `.cursor-plugin/marketplace.json` | Cursor's marketplace catalog |
 | `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
 | `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
 | `opencode/opencode.json` | OpenCode is not a compatible client and has no plugin format for MCP servers or skills |
