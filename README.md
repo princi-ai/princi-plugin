@@ -169,7 +169,7 @@ The spec's portable surface is just skills and MCP servers. Marketplace catalogs
 
 One caveat on `extensions`: Princi's presentation metadata (logo, display name, category) sits under an `ai.princi` namespace in `plugin.json` because the manifest schema is closed and non-portable fields have nowhere else to go. No client implements that namespace, so it is documentation, not behavior — the spec is explicit that an extension "is not a way for a plugin author to make up fields that existing clients will automatically understand."
 
-CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint.
+CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint. Run the same checks before pushing with `./scripts/validate.sh` — it skips any check whose dependency is missing locally, and CI runs it with `STRICT_DEPS=1` so a skip there is a failure.
 
 ---
 
