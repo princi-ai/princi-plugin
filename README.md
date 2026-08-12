@@ -155,7 +155,7 @@ The first Princi tool call opens an OAuth browser flow to sign in.
 
 ### What's left outside the portable package
 
-Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package and no longer need a vendor-specific plugin manifest (`.cursor-plugin/plugin.json`, `.codex-plugin/`). Cursor can publish from that root package alone. Codex still needs a marketplace catalog for `codex plugin marketplace add` / install. What remains outside the portable package is only what the spec deliberately leaves out:
+Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package. Cursor can publish from that package alone. Codex still needs [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json) for `codex plugin marketplace add` / install. What remains outside the portable package is only what the spec deliberately leaves out:
 
 | File | Why it can't be portable |
 | --- | --- |
@@ -241,10 +241,3 @@ Sources are connected separately in the Princi app at [princi.ai](https://princi
 **Contact.** Reach us at `support@princi.ai` for any privacy questions or data deletion requests.
 
 Full policy: https://princi.ai/privacy
-
----
-
-## Coming Soon
-
-- cursor.directory one-click install
-- Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` go away
