@@ -9,56 +9,20 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 - `/princi:princi what did we discuss about productionizing Princi in recent meetings?`
 - `/princi:princi create a plan to update the PRD based on our latest discussions`
 
-> **Skill names are namespaced when installed as a plugin.** Clients that load Princi as a plugin prefix every skill with the plugin name, so the skills are `/princi:princi`, `/princi:princi-code-review`, and `/princi:princi-update-pr-best-practices`. If you instead copy `skills/` in by hand (the OpenCode path below), there is no prefix and they are just `/princi`, `/princi-code-review`, and `/princi-update-pr-best-practices`.
+> Plugin-installed skills are namespaced: `/princi:princi`, `/princi:princi-code-review`, `/princi:princi-update-pr-best-practices`. Copying `skills/` in by hand (the OpenCode path) drops the prefix.
 
 ---
 
 ## Setup: Claude Code (CLI / Co-work / IDE extension)
 
-**1. Add the Princi marketplace and install**, both inside Claude Code:
+Run both inside Claude Code:
 
 ```
 /plugin marketplace add princi-ai/princi-plugin
 /plugin install princi@princi-plugin
 ```
 
-**2. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi:princi` skill is ready — no API key step.
-
-<details>
-<summary>Alternative: pin the marketplace in <code>settings.json</code></summary>
-
-Declare it in `~/.claude/settings.json` instead of running `/plugin marketplace add`, which is useful for dotfiles or for handing a project to a team:
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "princi-ai": {
-      "source": { "source": "github", "repo": "princi-ai/princi-plugin" }
-    }
-  }
-}
-```
-
-Then install with `/plugin install princi@princi-ai`.
-
-**Mind the suffix.** A marketplace is named by however you added it. The JSON key above names it `princi-ai`, so the install id is `princi@princi-ai`. Adding it with the slash command instead takes the name from the repo's own `marketplace.json`, which is `princi-plugin` — hence `princi@princi-plugin`. Use the id that matches the route you took; `/plugin marketplace list` shows which one you have.
-
-</details>
-
-<details>
-<summary>Alternative: install without a marketplace</summary>
-
-Claude Code loads any folder in a skills directory that contains a `.claude-plugin/plugin.json`, with no marketplace and no install step. Clone the repo into your personal skills directory:
-
-```bash
-git clone https://github.com/princi-ai/princi-plugin ~/.claude/skills/princi
-```
-
-It loads as `princi@skills-dir` on the next session, MCP server and skills included.
-
-The tradeoff: no `/plugin update`, no version pinning, and no auto-update. You update it with `git pull`. Prefer the marketplace route unless you specifically don't want to add a third-party marketplace.
-
-</details>
+The first Princi tool call opens a browser to sign in. After that, `/princi:princi` is ready — no API key step.
 
 ---
 
@@ -195,7 +159,7 @@ Cursor and Codex are both [compatible clients](https://agent-plugins.org/compati
 
 | File | Why it can't be portable |
 | --- | --- |
-| `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The Princi MCP server is declared inline in it — Claude Code reads either a root `.mcp.json` or an inline `mcpServers` object, and inline keeps the server in one file |
+| `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The MCP server is declared inline in it |
 | `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
 | `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
 | `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
@@ -231,19 +195,11 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 
 ## Updating
 
-In Claude Code, using the install id you actually have — `/plugin marketplace list` shows it:
-
 ```
 /plugin update princi@princi-plugin
 ```
 
-In Codex, whose catalog is named `princi-ai`:
-
-```
-/plugin update princi@princi-ai
-```
-
-A `@skills-dir` install updates with `git pull` in the cloned directory instead.
+In Codex, the id is `princi@princi-ai`.
 
 ---
 
@@ -259,32 +215,14 @@ sha256sum -c princi-v0.1.0-checksums.txt
 
 ## What the plugin can access
 
-Installing this plugin grants **identity only**. The MCP server's OAuth flow requests three scopes:
-
-| Scope | Grants |
-| --- | --- |
-| `openid` | A stable subject identifier for your Princi account |
-| `profile` | Basic profile fields |
-| `email` | Your email address, used to match you to your Princi account |
-
-No Gmail, Drive, Slack, or Calendar scope is requested by the plugin. You can verify this yourself against the server's [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html) protected-resource metadata, which is public and unauthenticated:
+Installing this plugin grants **identity only** — the MCP server requests `openid`, `profile`, and `email`. No Gmail, Drive, Slack, or Calendar scope. Verify against the server's public metadata:
 
 ```bash
 curl -s https://princi.ai/.well-known/oauth-protected-resource
+# "scopes_supported": ["openid", "profile", "email"]
 ```
 
-```json
-{
-  "resource": "https://princi.ai/mcp",
-  "authorization_servers": ["https://imyhlkntvqyznjdmzfjs.supabase.co/auth/v1"],
-  "bearer_methods_supported": ["header"],
-  "scopes_supported": ["openid", "profile", "email"]
-}
-```
-
-**Where the source access actually lives.** Connecting Gmail, Drive, Slack, and Calendar is a separate step you perform in the Princi app at [princi.ai](https://princi.ai), under a separate consent screen, before you install the plugin. Those grants belong to your Princi account, not to this plugin. Searching from your editor reads the corpus that was already indexed there; the plugin cannot initiate a new provider connection, and revoking a provider in Princi takes effect for the plugin immediately.
-
-**Two consequences worth knowing.** Uninstalling the plugin does not disconnect your sources — revoke those in the Princi app. And the plugin returns whatever the signed-in account can see, so on a shared machine, sign out rather than leaving a session active.
+Sources are connected separately in the Princi app at [princi.ai](https://princi.ai), under their own consent screen. Those grants belong to your account, not this plugin, so uninstalling does not disconnect them — revoke them in the app.
 
 ---
 
@@ -309,5 +247,4 @@ Full policy: https://princi.ai/privacy
 ## Coming Soon
 
 - cursor.directory one-click install
-- Listing in Anthropic's [`claude-community`](https://github.com/anthropics/claude-plugins-community) marketplace, submitted for review. If it lands, Claude Code users can skip step 1 above and install with `/plugin install princi@claude-community` after adding that one marketplace
 - Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` go away
