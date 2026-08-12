@@ -15,7 +15,19 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 
 ## Setup: Claude Code (CLI / Co-work / IDE extension)
 
-**1. Add the Princi marketplace** (one-time, in `~/.claude/settings.json`):
+**1. Add the Princi marketplace and install**, both inside Claude Code:
+
+```
+/plugin marketplace add princi-ai/princi-plugin
+/plugin install princi@princi-plugin
+```
+
+**2. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi:princi` skill is ready — no API key step.
+
+<details>
+<summary>Alternative: pin the marketplace in <code>settings.json</code></summary>
+
+Declare it in `~/.claude/settings.json` instead of running `/plugin marketplace add`, which is useful for dotfiles or for handing a project to a team:
 
 ```json
 {
@@ -27,13 +39,26 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 }
 ```
 
-**2. Install the plugin** in Claude Code:
+Then install with `/plugin install princi@princi-ai`.
 
-```
-/plugins install princi@princi-ai
+**Mind the suffix.** A marketplace is named by however you added it. The JSON key above names it `princi-ai`, so the install id is `princi@princi-ai`. Adding it with the slash command instead takes the name from the repo's own `marketplace.json`, which is `princi-plugin` — hence `princi@princi-plugin`. Use the id that matches the route you took; `/plugin marketplace list` shows which one you have.
+
+</details>
+
+<details>
+<summary>Alternative: install without a marketplace</summary>
+
+Claude Code loads any folder in a skills directory that contains a `.claude-plugin/plugin.json`, with no marketplace and no install step. Clone the repo into your personal skills directory:
+
+```bash
+git clone https://github.com/princi-ai/princi-plugin ~/.claude/skills/princi
 ```
 
-**3. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi:princi` skill is ready — no API key step.
+It loads as `princi@skills-dir` on the next session, MCP server and skills included.
+
+The tradeoff: no `/plugin update`, no version pinning, and no auto-update. You update it with `git pull`. Prefer the marketplace route unless you specifically don't want to add a third-party marketplace.
+
+</details>
 
 ---
 
@@ -206,9 +231,19 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 
 ## Updating
 
+In Claude Code, using the install id you actually have — `/plugin marketplace list` shows it:
+
 ```
-/plugins update princi@princi-ai
+/plugin update princi@princi-plugin
 ```
+
+In Codex, whose catalog is named `princi-ai`:
+
+```
+/plugin update princi@princi-ai
+```
+
+A `@skills-dir` install updates with `git pull` in the cloned directory instead.
 
 ---
 
@@ -274,4 +309,5 @@ Full policy: https://princi.ai/privacy
 ## Coming Soon
 
 - cursor.directory one-click install
+- Listing in Anthropic's [`claude-community`](https://github.com/anthropics/claude-plugins-community) marketplace, submitted for review. If it lands, Claude Code users can skip step 1 above and install with `/plugin install princi@claude-community` after adding that one marketplace
 - Claude Code support for the Agent Plugins spec, which would let `.claude-plugin/` go away
