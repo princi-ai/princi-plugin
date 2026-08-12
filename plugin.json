@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "princi",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Your personal context engine. Bootstrap any AI task by instantly warming up with relevant emails, Drive docs, Slack threads, and meeting decisions — before writing a single line of code.",
   "author": { "name": "Princi AI", "email": "support@princi.ai", "url": "https://princi.ai" },
   "homepage": "https://princi.ai",

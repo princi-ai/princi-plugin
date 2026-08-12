@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.14 — 2026-08-11
+
+- **Clean `claude plugin validate --strict`, in preparation for submitting to the [`claude-community`](https://github.com/anthropics/claude-plugins-community) marketplace.** The review pipeline runs the same validator on every submission. Three warnings came from fields Claude Code does not recognize and silently ignores: `id` in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json), and `logo` in both `.claude-plugin/` manifests. The logo is unaffected in the clients that actually render it — Cursor's tile reads [`.cursor-plugin/marketplace.json`](.cursor-plugin/marketplace.json) and the portable package carries it under `extensions["ai.princi"]` in [`plugin.json`](plugin.json). The fourth warning was a missing marketplace-level `description`, now written
+- CI: the logo-existence check hardcoded the two `.claude-plugin/` manifests and would have thrown `KeyError` once the field was gone. It now checks the two manifests that carry a logo, including the portable package's `extensions["ai.princi"].logo`, which was never covered before
+- **Document the plugin's OAuth scopes.** The MCP server requests `openid`, `profile`, and `email` — identity only, no provider scopes. Gmail, Drive, Slack, and Calendar are connected separately in the Princi app under their own consent screen, so installing the plugin grants no source access on its own. The README now states this and shows the `curl` against the server's RFC 9728 metadata that proves it, rather than asking the reader to take it on faith
+- **Fix the skill names in the README.** Plugin-loaded skills are namespaced by plugin name, so the invocations are `/princi:princi`, `/princi:princi-code-review`, and `/princi:princi-update-pr-best-practices`. Every example was written unprefixed and would not have worked as typed. The manual-copy path (OpenCode) has no prefix and is called out separately
+- Bump version to 0.1.14 across all plugin manifests
+
 ## 0.1.13 — 2026-08-10
 
 - **Agent Plugins 1.0.0 conformance.** The repo root is now a portable [Agent Plugins](https://agent-plugins.org) package, so any spec-aware client can install Princi without a vendor-specific path. [`plugin.json`](plugin.json) becomes the portable manifest — it gains the required `$schema`, plus `version`, `author`, `homepage`, `repository`, `license`, and `keywords`. The manifest schema is closed, so presentation metadata (logo, display name, category) moves under an `ai.princi` reverse-domain key in `extensions`

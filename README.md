@@ -2,12 +2,14 @@
 
 Connect Princi — your personal context engine — to any AI coding tool.
 
-Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
+Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi:princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
 
 **Examples:**
-- `/princi what tasks do I have from today's team sync meeting?`
-- `/princi what did we discuss about productionizing Princi in recent meetings?`
-- `/princi create a plan to update the PRD based on our latest discussions`
+- `/princi:princi what tasks do I have from today's team sync meeting?`
+- `/princi:princi what did we discuss about productionizing Princi in recent meetings?`
+- `/princi:princi create a plan to update the PRD based on our latest discussions`
+
+> **Skill names are namespaced when installed as a plugin.** Clients that load Princi as a plugin prefix every skill with the plugin name, so the skills are `/princi:princi`, `/princi:princi-code-review`, and `/princi:princi-update-pr-best-practices`. If you instead copy `skills/` in by hand (the OpenCode path below), there is no prefix and they are just `/princi`, `/princi-code-review`, and `/princi-update-pr-best-practices`.
 
 ---
 
@@ -31,7 +33,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 /plugins install princi@princi-ai
 ```
 
-**3. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi` skill is ready — no API key step.
+**3. Use it.** The first time you invoke a Princi tool, the HTTP MCP client triggers OAuth auto-discovery and opens a browser to sign in to Princi. After sign-in the `/princi:princi` skill is ready — no API key step.
 
 ---
 
@@ -50,7 +52,7 @@ Princi searches your emails, Drive docs, Slack messages, and meeting notes to bo
 
 In Cursor, run `/add-plugin princi` — or browse [cursor.com/marketplace](https://cursor.com/marketplace) and install Princi from the listing.
 
-Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/) — and registers the Princi MCP server and `/princi` skills automatically. The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
+Cursor reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/) — and registers the Princi MCP server and the Princi skills automatically. The first time you invoke a Princi tool, an OAuth browser flow opens to sign in to Princi.
 
 **Option B — MCP server only** (no plugin):
 
@@ -197,7 +199,7 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 **Token expired / 401 errors:**
 - Sign out by clearing the local `mcp-remote` token cache at `~/.mcp-auth/` and re-invoke a Princi tool to trigger a fresh sign-in.
 
-**0 results from `/princi`:**
+**0 results from `/princi:princi`:**
 - Try a broader or rephrased query
 - Ensure your Google/Slack accounts are connected in Princi
 
@@ -218,6 +220,37 @@ Each release ships a `princi-<version>-checksums.txt` file with SHA256 hashes fo
 ```bash
 sha256sum -c princi-v0.1.0-checksums.txt
 ```
+
+---
+
+## What the plugin can access
+
+Installing this plugin grants **identity only**. The MCP server's OAuth flow requests three scopes:
+
+| Scope | Grants |
+| --- | --- |
+| `openid` | A stable subject identifier for your Princi account |
+| `profile` | Basic profile fields |
+| `email` | Your email address, used to match you to your Princi account |
+
+No Gmail, Drive, Slack, or Calendar scope is requested by the plugin. You can verify this yourself against the server's [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html) protected-resource metadata, which is public and unauthenticated:
+
+```bash
+curl -s https://princi.ai/.well-known/oauth-protected-resource
+```
+
+```json
+{
+  "resource": "https://princi.ai/mcp",
+  "authorization_servers": ["https://imyhlkntvqyznjdmzfjs.supabase.co/auth/v1"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["openid", "profile", "email"]
+}
+```
+
+**Where the source access actually lives.** Connecting Gmail, Drive, Slack, and Calendar is a separate step you perform in the Princi app at [princi.ai](https://princi.ai), under a separate consent screen, before you install the plugin. Those grants belong to your Princi account, not to this plugin. Searching from your editor reads the corpus that was already indexed there; the plugin cannot initiate a new provider connection, and revoking a provider in Princi takes effect for the plugin immediately.
+
+**Two consequences worth knowing.** Uninstalling the plugin does not disconnect your sources — revoke those in the Princi app. And the plugin returns whatever the signed-in account can see, so on a shared machine, sign out rather than leaving a session active.
 
 ---
 
