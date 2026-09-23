@@ -4,9 +4,8 @@ description: |
   Personal PR review grounded in your own context — Drive docs, past coding-agent
   chats, and PR history — before you push or request review.
   Use when: about to open or push a PR; want a second opinion on your own changes;
-  use phrases like "review my PR", "check this PR", "princi-code-review <number>".
+  use phrases like "review my PR", "check this PR", "princi-code-review 42".
   Example: "/princi-code-review 42" or "/princi-code-review 42 owner/repo"
-origin: plugin
 ---
 
 # princi-code-review
@@ -60,6 +59,9 @@ If a finding is the *kind* a typical CI suite catches, omit it entirely.
 
 If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to follow the step for their environment:
 
+- **ChatGPT:** Open the Princi plugin or MCP connection in the Plugins Directory and select **Connect**. In developer mode, register `https://princi.ai/mcp` first if it is not listed.
+- **Codex desktop:** Open the Princi plugin's connection in the Plugins Directory and select **Connect**.
+- **Codex CLI:** Run `codex mcp login princi` and complete the browser sign-in. If the plugin itself is missing, install `princi@princi-ai` from the configured marketplace.
 - **Claude Code:** Run `/mcp` and find Princi in the list. If its status shows needs authentication, select it and press **Enter** — Claude Code opens your browser. Sign in to Princi and approve access, then return to Claude Code.
 - **Claude Desktop:** Open **Settings → Connectors → Customize Plugins → Personal** tab, find Princi and click **+** to install. Then open **Connectors** in the sidebar, find Princi, and click **Install**. In the dialog, click **Add** (the URL is pre-filled), then click **Connect** to authenticate. A browser opens — sign in to Princi and approve access, then click **Open Claude** to return.
 - **Cursor:** Go to Settings → **Tools & MCPs**. Find `princi` under **Plugin MCP Servers** and click **Connect**. The browser opens — click **Approve** to authorize Cursor to access your Princi context. When prompted, click **Open Cursor** to return. Confirm Princi's status shows as connected.

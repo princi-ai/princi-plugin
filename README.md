@@ -2,14 +2,16 @@
 
 Connect Princi — your personal context engine — to any AI coding tool.
 
-Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap any AI task with the right background. Instead of manually copy-pasting context into your coding agent, type `/princi:princi what do I need to do from today's meeting` and get grounded, ranked action items instantly.
+Princi searches your emails, Drive docs, Slack messages, and meeting notes to bootstrap an AI task with the right background. After installing the plugin, ask a question such as “What do I need to do from today's meeting?” or invoke the Princi skill in your client.
 
 **Examples:**
-- `/princi:princi what tasks do I have from today's team sync meeting?`
-- `/princi:princi what did we discuss about productionizing Princi in recent meetings?`
-- `/princi:princi create a plan to update the PRD based on our latest discussions`
+- “What tasks do I have from today's team sync meeting?”
+- “What did we discuss about productionizing Princi in recent meetings?”
+- “Create a plan to update the PRD based on our latest discussions.”
 
-> Plugin-installed skills are namespaced: `/princi:princi`, `/princi:princi-code-review`, `/princi:princi-update-pr-best-practices`. Copying `skills/` in by hand (the OpenCode path) drops the prefix.
+> Skill invocation syntax varies by client. Claude Code uses `/princi:princi`, `/princi:princi-code-review`, and `/princi:princi-update-pr-best-practices`. In ChatGPT and Codex, you can ask in natural language or select the skill from the plugin.
+
+The context-search workflow works in ChatGPT and Codex. The PR review and best-practices skills also use local Git and GitHub tooling, so run those in a coding client with repository access.
 
 ---
 
@@ -66,34 +68,40 @@ Auth uses OAuth auto-discovery when Cursor supports it. API-key fallback is avai
 
 ---
 
-## Setup: Codex (CLI / desktop app)
+## Setup: ChatGPT and Codex
 
-**Option A — Install as a Codex plugin** (bundles the skills + MCP server):
+### Public Plugins Directory
 
-```
+After Princi is approved and published, find **Princi** in the Plugins Directory shared by ChatGPT and Codex, install it, and connect your Princi account. This public listing is separate from this repository's marketplace. Until publication, use the local marketplace or developer-mode paths below.
+
+### Codex CLI and ChatGPT desktop: repository marketplace
+
+Add this repository as a marketplace and install the plugin:
+
+```bash
 codex plugin marketplace add princi-ai/princi-plugin
+codex plugin add princi@princi-ai
 ```
 
-Then, inside Codex:
+In Codex CLI, start a new session after installation and ask Princi to search your context. In the ChatGPT desktop app, open the Plugins Directory, choose the **Princi** marketplace, and install **Princi**. For a full local test with the MCP connection in ChatGPT, register the server and add its connection mapping as described below before installing. The plugin bundles the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/).
 
+For development from this checkout, run `codex plugin marketplace add .` instead of the GitHub command, then `codex plugin add princi@princi-ai`. The desktop app loads an installed copy; restart it and reinstall after changing the local source. Use a new chat to test changed skills or tools.
+
+### ChatGPT: direct MCP developer-mode test
+
+To test the MCP tools before the plugin is published:
+
+1. In ChatGPT, open **Settings → Security and login** and turn on **Developer mode**.
+2. Open **ChatGPT Plugins**, select **+**, and register `https://princi.ai/mcp`.
+3. Connect your Princi account, then test the `search` and `fetch` tools in a new chat.
+
+This tests the MCP connection. To test a local ChatGPT plugin that combines the connection with bundled skills, copy the registered connection's `plugin_asdk_app...` ID from its browser URL. Add a local `.app.json` with your actual ID:
+
+```json
+{"apps":{"princi":{"id":"plugin_asdk_app_...","category":"Productivity"}}}
 ```
-/plugin install princi@princi-ai
-/reload-plugins
-```
 
-Or browse with `/plugins`. Codex reads the [Agent Plugins](https://agent-plugins.org) package at the repo root — [plugin.json](plugin.json), [mcp.json](mcp.json), and [skills/](skills/). The first time you invoke a Princi tool, an OAuth browser flow opens to sign in.
-
-> Plugins are supported in the Codex CLI and desktop app. They are **not** available in ChatGPT Chat, the IDE extension, or mobile — use Option B there.
-
----
-
-## Setup: ChatGPT (Pro / Team / Enterprise)
-
-1. Open ChatGPT → Settings → Developer Mode
-2. Add MCP server URL: `https://princi.ai/mcp`
-3. Princi's `search` and `fetch` tools are now available
-
-Auth uses OAuth auto-discovery when ChatGPT supports it. API-key fallback is available for older clients — contact Princi.
+Then add `"apps": "./.app.json"` beside `"interface"` under `extensions.com.openai` in `plugin.json`. Refresh the desktop app, install from the Princi marketplace, and test in a new chat. Keep this test connection mapping out of the public release. See [OpenAI's local plugin guide](https://developers.openai.com/plugins/build/plugins).
 
 ---
 
@@ -155,21 +163,21 @@ The first Princi tool call opens an OAuth browser flow to sign in.
 
 ### What's left outside the portable package
 
-Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package. Cursor can publish from that package alone. Codex still needs [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json) for `codex plugin marketplace add` / install. What remains outside the portable package is only what the spec deliberately leaves out:
+Cursor and Codex are both [compatible clients](https://agent-plugins.org/compatible-clients), so they load skills and MCP from the root package. Cursor can publish from that package alone. The [Codex marketplace catalog](.agents/plugins/marketplace.json) makes this repository installable as a local or Git marketplace; public ChatGPT/Codex listing uses [OpenAI's submission flow](https://developers.openai.com/plugins/deploy/submission). What remains outside the portable package is what the spec leaves to each client:
 
 | File | Why it can't be portable |
 | --- | --- |
 | `.claude-plugin/plugin.json` | Claude Code is not a compatible client, so it needs its own manifest. The MCP server is declared inline in it |
 | `.claude-plugin/marketplace.json` | Marketplace catalog — distribution is outside the spec |
-| `.agents/plugins/marketplace.json` | Codex's marketplace catalog |
+| `.agents/plugins/marketplace.json` | Local and Git marketplace catalog for ChatGPT desktop and Codex |
 | `desktop/manifest.json` | Claude Desktop takes an `.mcpb` bundle, not a plugin |
 | `opencode/opencode.json` | OpenCode is not a compatible client and has no plugin format for MCP servers or skills |
 
 The spec's portable surface is just skills and MCP servers. Marketplace catalogs, install policy, and signing are explicitly out of scope, so each stays in its platform's own file.
 
-One caveat on `extensions`: Princi's presentation metadata (logo, display name, category) sits under an `ai.princi` namespace in `plugin.json` because the manifest schema is closed and non-portable fields have nowhere else to go. No client implements that namespace, so it is documentation, not behavior — the spec is explicit that an extension "is not a way for a plugin author to make up fields that existing clients will automatically understand."
+Princi's `ai.princi` extension remains descriptive metadata for clients that may support it. OpenAI presentation metadata lives separately in `extensions.com.openai`, so ChatGPT and Codex can show the plugin name, logo, description, and starter prompts.
 
-CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR, and asserts every MCP config points at the same endpoint. Run the same checks before pushing with `./scripts/validate.sh` — it skips any check whose dependency is missing locally, and CI runs it with `STRICT_DEPS=1` so a skip there is a failure.
+CI validates `plugin.json` and `mcp.json` against the canonical published schemas on every PR. It also checks Agent Skills frontmatter, OpenAI listing metadata, and MCP endpoint consistency. Run the same checks before pushing with `./scripts/validate.sh` — it skips checks whose dependencies are missing locally, and CI runs it with `STRICT_DEPS=1` so a skip there is a failure.
 
 ---
 
@@ -182,6 +190,7 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 **Sign-in browser doesn't open:**
 - Confirm your coding tool supports OAuth-enabled HTTP MCP servers (Claude Desktop, Claude Code, Codex, Cursor, OpenCode).
 - In Codex, force the flow with `codex mcp login princi`; in OpenCode, `opencode mcp auth princi`.
+- In ChatGPT, open the Princi connection in the Plugins Directory and select **Connect**.
 - Check your terminal/console for an authorization URL printed by `mcp-remote` and open it manually.
 
 **Token expired / 401 errors:**
@@ -195,11 +204,9 @@ CI validates `plugin.json` and `mcp.json` against the canonical published schema
 
 ## Updating
 
-```
-/plugin update princi@princi-plugin
-```
+In Claude Code, run `/plugin update princi@princi-plugin`.
 
-In Codex, the id is `princi@princi-ai`.
+For a Codex Git marketplace installation, run `codex plugin marketplace upgrade princi-ai`, then `codex plugin add princi@princi-ai`. Restart the ChatGPT desktop app or begin a new Codex session before testing the updated plugin.
 
 ---
 
