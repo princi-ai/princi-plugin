@@ -25,7 +25,7 @@ jobs:
       - name: Install check dependencies
         run: |
           set -e
-          python3 -m pip install --quiet --disable-pip-version-check jsonschema
+          python3 -m pip install --quiet --disable-pip-version-check jsonschema PyYAML
           # Pinned deliberately, the same way every action above is pinned to a
           # SHA. Bump it on purpose: a newer CLI can add validation rules, and
           # the community-marketplace review pipeline always runs the current

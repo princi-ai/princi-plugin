@@ -8,7 +8,6 @@ description: |
   "last meeting", "last standup", "look in my email/Slack/Drive",
   "ground this in that doc", or explicitly mentions princi.
   Example: "What do I need to do from today's meeting?"
-origin: plugin
 ---
 
 # princi
@@ -17,10 +16,13 @@ On-demand search across Drive, Gmail, Slack, Calendar, and Memory that extracts 
 
 ## MCP connection check
 
-If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, instruct the user to run `/mcp` and follow the step for their environment:
+If the Princi MCP server's **search** tool is unavailable, not connected, or returns an authentication error, give the user the connection step for their environment and retry after they sign in:
 
+- **ChatGPT:** Open the Princi plugin or MCP connection in the Plugins Directory and select **Connect**. In developer mode, register `https://princi.ai/mcp` first if it is not listed.
+- **Codex desktop:** Open the Princi plugin's connection in the Plugins Directory and select **Connect**.
+- **Codex CLI:** Run `codex mcp login princi` and complete the browser sign-in. If the plugin itself is missing, install `princi@princi-ai` from the configured marketplace.
 - **Claude Code (IDE extension):** Select Plugins → Code → Princi → Connectors → **Connect**.
-- **Claude CLI (terminal):** Navigate to `princi` with ↑/↓ and press **Enter** to open the browser sign-in.
+- **Claude CLI (terminal):** Run `/mcp`, navigate to `princi` with ↑/↓, and press **Enter** to open the browser sign-in.
 
 ---
 

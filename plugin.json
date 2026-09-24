@@ -14,6 +14,23 @@
       "logo": "./assets/logo.png",
       "category": "productivity",
       "privacyPolicyURL": "https://princi.ai/privacy"
+    },
+    "com.openai": {
+      "interface": {
+        "displayName": "Princi",
+        "shortDescription": "Find the context behind your work.",
+        "longDescription": "Search your connected Gmail, Drive, Slack, Calendar, and memory for relevant decisions, meeting notes, and action items. Use Princi to ground planning in your context and support code review in coding clients.",
+        "developerName": "Princi AI",
+        "category": "Productivity",
+        "websiteURL": "https://princi.ai",
+        "privacyPolicyURL": "https://princi.ai/privacy",
+        "defaultPrompt": [
+          "What do I need to do from today's meeting?",
+          "What did we decide about the latest project plan?",
+          "Review this PR using my past decisions and docs."
+        ],
+        "logo": "./assets/logo.png"
+      }
     }
   }
 }

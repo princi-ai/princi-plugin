@@ -66,6 +66,48 @@ print(f"   {path} -> {logo}")
 PY
 then pass "logo resolves"; else fail "logo missing"; fi
 
+# --------------------------------------------- 2a. OpenAI install presentation
+
+header "OpenAI plugin presentation"
+if python3 - <<'PY'
+import json, os, sys
+from urllib.parse import urlparse
+
+manifest = json.load(open("plugin.json"))
+interface = manifest.get("extensions", {}).get("com.openai", {}).get("interface", {})
+required = ("displayName", "shortDescription", "longDescription", "developerName", "category", "websiteURL", "privacyPolicyURL", "logo")
+bad = False
+
+for key in required:
+    if not isinstance(interface.get(key), str) or not interface[key].strip():
+        print(f"::error file=plugin.json::extensions.com.openai.interface.{key} must be a non-empty string")
+        bad = True
+
+for key in ("websiteURL", "privacyPolicyURL", "termsOfServiceURL"):
+    value = interface.get(key)
+    if value is not None and (not isinstance(value, str) or urlparse(value).scheme != "https" or not urlparse(value).netloc):
+        print(f"::error file=plugin.json::extensions.com.openai.interface.{key} must be an absolute HTTPS URL")
+        bad = True
+
+for key in ("logo", "composerIcon"):
+    value = interface.get(key)
+    if value is not None and (not isinstance(value, str) or not value.startswith("./assets/") or not os.path.isfile(value)):
+        print(f"::error file=plugin.json::extensions.com.openai.interface.{key} must point to an existing ./assets/ file")
+        bad = True
+
+prompts = interface.get("defaultPrompt")
+if not isinstance(prompts, list) or not 1 <= len(prompts) <= 3 or any(not isinstance(p, str) or not p.strip() or len(p) > 128 for p in prompts):
+    print("::error file=plugin.json::defaultPrompt must contain 1-3 non-empty strings of at most 128 characters")
+    bad = True
+
+if interface.get("developerName") != manifest.get("author", {}).get("name"):
+    print("::error file=plugin.json::OpenAI developerName must match portable author.name")
+    bad = True
+
+sys.exit(1 if bad else 0)
+PY
+then pass "OpenAI metadata and assets valid"; else fail "OpenAI presentation invalid"; fi
+
 # ------------------------------------------------- 3. Agent Plugins conformance
 
 # The repo root is an Agent Plugins 1.0.0 package: plugin.json + mcp.json +
@@ -127,6 +169,19 @@ for entry in sorted(os.listdir("skills")):
 sys.exit(1 if bad else 0)
 PY
 then pass "conforms to Agent Plugins 1.0.0"; else fail "Agent Plugins conformance"; fi
+
+# ---------------------------------------------------- 3a. Skill frontmatter
+
+# The Agent Plugins schema discovers skill folders but does not validate their
+# SKILL.md frontmatter. Check it separately so clients can load every skill.
+header "Agent Skills frontmatter"
+if ! python3 -c 'import yaml' 2>/dev/null; then
+  skip "Agent Skills frontmatter — no PyYAML (pip install PyYAML)"
+elif python3 scripts/validate-skills.py; then
+  pass "every skill frontmatter validates"
+else
+  fail "Agent Skills frontmatter"
+fi
 
 # ------------------------------------------------------------ 4. MCP endpoint
 
@@ -216,7 +271,7 @@ then pass "all manifests agree"; else fail "keyword drift"; fi
 # the portable spec. Guards the schema mistake caught in review on #34.
 header "Codex marketplace schema"
 if python3 - <<'PY'
-import json, sys
+import json, os, sys
 
 bad = False
 
@@ -225,6 +280,7 @@ bad = False
 VALID_AUTH = {"ON_INSTALL", "ON_USE"}
 VALID_INSTALL = {"INSTALLED_BY_DEFAULT", "AVAILABLE", "NOT_AVAILABLE"}
 marketplace = ".agents/plugins/marketplace.json"
+root = os.path.realpath(".")
 for entry in json.load(open(marketplace))["plugins"]:
     policy = entry["policy"]
     for key, valid in (("authentication", VALID_AUTH), ("installation", VALID_INSTALL)):
@@ -235,9 +291,32 @@ for entry in json.load(open(marketplace))["plugins"]:
         else:
             print(f"   {entry['name']}.policy.{key} = {value}")
 
+    source = entry.get("source")
+    if isinstance(source, str):
+        path = source
+    elif isinstance(source, dict) and source.get("source") == "local":
+        path = source.get("path")
+    else:
+        path = None
+    if not isinstance(path, str) or not path.startswith("./"):
+        print(f"::error file={marketplace}::{entry['name']}.source must be a ./-prefixed local path")
+        bad = True
+        continue
+    plugin_root = os.path.realpath(os.path.join(root, path))
+    if os.path.commonpath((root, plugin_root)) != root or not os.path.isfile(os.path.join(plugin_root, "plugin.json")):
+        print(f"::error file={marketplace}::{entry['name']}.source does not resolve to a plugin inside the marketplace root")
+        bad = True
+        continue
+    plugin_name = json.load(open(os.path.join(plugin_root, "plugin.json"))).get("name")
+    if plugin_name != entry["name"]:
+        print(f"::error file={marketplace}::{entry['name']}.source has plugin name {plugin_name!r}")
+        bad = True
+    else:
+        print(f"   {entry['name']}.source -> {plugin_root}")
+
 sys.exit(1 if bad else 0)
 PY
-then pass "policy enums valid"; else fail "Codex marketplace schema"; fi
+then pass "policy and local source valid"; else fail "Codex marketplace schema"; fi
 
 # ------------------------------------------------ 7. claude plugin validate
 

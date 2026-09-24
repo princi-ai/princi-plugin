@@ -1,7 +1,6 @@
 ---
 name: princi-update-pr-best-practices
 description: Create or update the repository's `.princi/pr-best-practices.md`. Bootstraps from the last 100 closed GitHub PRs when no file exists; otherwise does an incremental update — synthesizing only PRs closed since the last run and merging them in. Synthesizes reusable team conventions (for future PRs and design docs) from rollbacks, follow-on fixes, review feedback, and PR descriptions.
-origin: plugin
 ---
 
 # princi-update-pr-best-practices
