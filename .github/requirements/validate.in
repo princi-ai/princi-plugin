@@ -1,0 +1,5 @@
+# Direct dependencies for .github/workflows/validate.yml.
+# The hash lock is validate.txt. Regenerate it after bumping a pin:
+#   pip-compile --generate-hashes --strip-extras --output-file=.github/requirements/validate.txt .github/requirements/validate.in
+jsonschema==4.26.0
+PyYAML==6.0.3
