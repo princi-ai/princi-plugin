@@ -1,0 +1,8 @@
+{
+  "name": "princi-plugin-ci",
+  "private": true,
+  "description": "Hash-locked CI tools for .github/workflows/validate.yml. Not published. Bump @anthropic-ai/claude-code on purpose, then regenerate package-lock.json with npm install.",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.296"
+  }
+}

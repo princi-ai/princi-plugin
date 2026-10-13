@@ -24,13 +24,21 @@ jobs:
 
       - name: Install check dependencies
         run: |
-          set -e
-          python3 -m pip install --quiet --disable-pip-version-check jsonschema PyYAML
-          # Pinned deliberately, the same way every action above is pinned to a
-          # SHA. Bump it on purpose: a newer CLI can add validation rules, and
-          # the community-marketplace review pipeline always runs the current
-          # one, so a stale pin here can pass while a submission fails.
-          npm install -g @anthropic-ai/claude-code@2.1.220
+          set -euo pipefail
+          # Hash-pinned. Scorecard's Pinned-Dependencies check treats a pip
+          # install as pinned only with --require-hashes, and an npm install
+          # as pinned only for `npm ci` (lockfile integrity) or a 40-character
+          # git commit. Versions live in the lockfiles:
+          #   .github/requirements/validate.txt
+          #   .github/ci/package-lock.json
+          # Bump Claude Code on purpose: a newer CLI can add validation rules,
+          # and the community-marketplace review pipeline always runs the
+          # current one, so a stale pin here can pass while a submission fails.
+          python3 -m pip install --disable-pip-version-check --require-hashes \
+            -r .github/requirements/validate.txt
+          npm ci --prefix .github/ci
+          echo "$PWD/.github/ci/node_modules/.bin" >> "$GITHUB_PATH"
+          export PATH="$PWD/.github/ci/node_modules/.bin:$PATH"
           claude --version
 
       # Same script you can run locally with ./scripts/validate.sh.
