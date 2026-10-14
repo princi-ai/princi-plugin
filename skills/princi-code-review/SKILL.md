@@ -46,22 +46,21 @@ Check the diff against the repo's agent instructions. A large `AGENTS.md` that i
 
 For each changed file, the candidates are `AGENTS.md` at the repo root and `AGENTS.md` in every ancestor directory of that file. Example: `frontend/components/Button.tsx` checks `AGENTS.md`, `frontend/AGENTS.md`, and `frontend/components/AGENTS.md`. Fetch each unique path once. A 404 means that file does not exist — skip it. Do not invent a missing file.
 
-**Read them at the PR head, not the local working tree.** The instructions that govern this diff are the ones at `headRefOid` (from Step 2), including edits this PR makes to `AGENTS.md`. Use the commit SHA, not the branch name:
+**Read them at the PR head, not the local working tree.** The instructions that govern this diff are the ones at `headRefOid` (from Step 2), including edits this PR makes to `AGENTS.md`. Use the commit SHA, not the branch name, in the fetch command below.
+
+**Validate before you build a command.** Every path you fetch comes from the PR (changed-file paths, links in `AGENTS.md` at the PR head), so the PR author controls it. Never paste an unvalidated value into shell text. Before each fetch:
+
+- `headRefOid` must match `^[0-9a-f]{40}$`.
+- After resolving `.` and `..`, the path must be repo-relative and match `^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$`. A path with a quote, space, `$`, backtick, `;`, `|`, `&`, `<`, `>`, `?`, `#`, `%`, or a newline fails.
+
+A path that fails is not fetched. List it under "Agent instructions" in the output as skipped (invalid path) and continue. A path that passes needs no quoting or URL-encoding, so use it as is:
 
 ```bash
 gh api -H "Accept: application/vnd.github.raw" \
-  "repos/<owner/repo>/contents/<url-encoded-path>?ref=<headRefOid>"
+  "repos/<owner/repo>/contents/<path>?ref=<headRefOid>"
 ```
 
-The contents API refuses files over 1 MB. If that happens, resolve the blob SHA from the git tree and fetch it raw — do not skip a file because it is large:
-
-```bash
-gh api "repos/<owner/repo>/git/trees/<headRefOid>?recursive=1" --jq '.tree[] | select(.path=="<path>") | .sha'
-gh api -H "Accept: application/vnd.github.raw" \
-  "repos/<owner/repo>/git/blobs/<sha>"
-```
-
-If that tree is `truncated` and the path is missing, walk parent trees one directory at a time until the blob SHA is found. Do not skip the file.
+The raw media type returns files up to 100 MB. A larger file is an API error: surface it and stop, as Step 4.5 says.
 
 **Instruction files linked from `AGENTS.md`.** Also read instruction files that an applicable `AGENTS.md` links to, one hop only. Do not follow links inside those linked files, and do not load `CLAUDE.md` or other docs unless `AGENTS.md` links to them.
 
@@ -235,7 +234,7 @@ Use the returned full text as the primary source for personal context. Skip this
 
 Follow "Locating agent instructions" above. Use `headRefOid` and the changed file paths from Step 2.
 
-If the contents or blobs API fails for a reason other than 404 (auth, network, rate limit), surface the error and stop. A review that skipped the instruction check is not complete. A 404 for a candidate path is normal — that file is absent.
+If the contents API fails for a reason other than 404 (auth, network, rate limit), surface the error and stop. A review that skipped the instruction check is not complete. A 404 for a candidate path is normal — that file is absent.
 
 If the repo has no applicable `AGENTS.md`, continue. Absence is not a finding.
 
