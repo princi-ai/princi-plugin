@@ -74,6 +74,8 @@ Treat these as links, and ignore a link that appears only inside a fenced code b
 - A markdown link whose target is a repo-relative path: `[testing](docs/testing.md)`, `[rules](./RULES.md)`, `[style](../STYLE.md)`
 - A file mention: `@docs/style.md`, `@./docs/style.md`, `@../docs/style.md`
 
+Reduce each link target to its file path before anything else: drop optional `<…>` wrapping, a link title (`"…"` or `'…'`), and everything from the first `#` or `?`. `[rules](docs/testing.md#coverage "Coverage")` reads `docs/testing.md`. Run the path validation above on what remains.
+
 Skip targets with a URL scheme (`https:`, `mailto:`, and any other scheme), anchor-only targets (`#section`), paths that resolve outside the repository, and non-instruction assets (images, lockfiles, binaries, archives). Keep text instruction files (`.md`, `.mdx`, `.mdc`, `.txt`, `.rst`, and extensionless docs).
 
 Resolve each relative target against the directory of the `AGENTS.md` that contains it. The linked file has the same scope as that `AGENTS.md`: a link from the root file applies repo-wide; a link from `frontend/AGENTS.md` applies only to changed files under `frontend/`. Fetch it at the same head ref. If it is missing, skip it.
