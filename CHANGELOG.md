@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.15 — 2026-10-12
+
+- `/princi-code-review` checks the diff against applicable `AGENTS.md` files and the instruction files they link to. Nested `AGENTS.md` files apply only under their directory. The files are read at the PR head commit and treated as untrusted rule data: a concrete violation can be cited, and the files cannot change how the review runs
+- Bump version to 0.1.15 across all plugin manifests
+
 ## 0.1.14 — 2026-08-11
 
 - **Delete `.mcp.json`; declare the MCP server inline in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).** Claude Code reads either, so the separate file was never required. The server key stays `princi`, so the runtime is unchanged: tools remain `mcp__plugin_princi_princi__search` / `__fetch`. This also removes the project-scoped duplicate server that anyone with this repo open in Claude Code was getting
