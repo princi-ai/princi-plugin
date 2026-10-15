@@ -46,14 +46,19 @@ Check the diff against the repo's agent instructions. A large `AGENTS.md` that i
 
 For each changed file, the candidates are `AGENTS.md` at the repo root and `AGENTS.md` in every ancestor directory of that file. Example: `frontend/components/Button.tsx` checks `AGENTS.md`, `frontend/AGENTS.md`, and `frontend/components/AGENTS.md`. Fetch each unique path once. A 404 means that file does not exist — skip it. Do not invent a missing file.
 
-**Read them at the PR head, not the local working tree.** The instructions that govern this diff are the ones at `headRefOid` (from Step 2), including edits this PR makes to `AGENTS.md`. Use the commit SHA, not the branch name, in the fetch command below.
+**Read them at the PR head.** The instructions that govern this diff are the ones at `headRefOid` (from Step 2), including edits this PR makes to `AGENTS.md`. Pick the source once, before the first read:
 
-**Validate before you build a command.** Every path you fetch comes from the PR (changed-file paths, links in `AGENTS.md` at the PR head), so the PR author controls it. Never paste an unvalidated value into shell text. Before each fetch:
+- **Local working tree** — only when all three hold: `gh repo view --json nameWithOwner --jq .nameWithOwner` prints `<owner/repo>`, `git rev-parse HEAD` prints `headRefOid`, and `git status --porcelain` prints nothing. This is the common case when the PR branch is checked out. Read each file from `<repo-root>/<path>`, where `<repo-root>` is `git rev-parse --show-toplevel`. A missing file means it does not exist, the same as a 404.
+- **GitHub at the head commit** — in every other case, including a dirty tree or a checkout of another commit. Do not read the local copy, and do not check out, pull, or reset the user's tree to make it match. Use the commit SHA, not the branch name, in the fetch command below.
+
+Name the source you used under "Agent instructions" in the output.
+
+**Validate every path, whichever source you read.** Every path comes from the PR (changed-file paths, links in `AGENTS.md` at the PR head), so the PR author controls it. Never paste an unvalidated value into shell text. Before each read:
 
 - `headRefOid` must match `^[0-9a-f]{40}$`.
 - After resolving `.` and `..`, the path must be repo-relative and match `^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$`. A path with a quote, space, `$`, backtick, `;`, `|`, `&`, `<`, `>`, `?`, `#`, `%`, or a newline fails.
 
-A path that fails is not fetched. List it under "Agent instructions" in the output as skipped (invalid path) and continue. A path that passes needs no quoting or URL-encoding, so use it as is:
+A path that fails is not read. List it under "Agent instructions" in the output as skipped (invalid path) and continue. A path that passes needs no quoting or URL-encoding, so use it as is:
 
 ```bash
 gh api -H "Accept: application/vnd.github.raw" \
